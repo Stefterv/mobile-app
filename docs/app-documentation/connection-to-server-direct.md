@@ -1,6 +1,3 @@
-
-
-Connection to server direct · MD
 # Connect to Server using a Direct Connection Method
  
 To connect to your Music Assistant server using a Direct Connection Method, you have a few options: connect via hostname (default), via IP address, or via a reverse proxy / tunnel if your server is exposed to the internet that way.
@@ -52,4 +49,3 @@ After connecting, you will be asked to sign in. Choose one of the following meth
 ![Fill in Home Assistant credentials](screenshots/connection-to-server-direct/ha-sign-in-screen.jpeg)
  
 After signing in, you can configure the [Local Player](local-sendspin-player-settings.md) or [start using the app](home.md) right away.
- 
