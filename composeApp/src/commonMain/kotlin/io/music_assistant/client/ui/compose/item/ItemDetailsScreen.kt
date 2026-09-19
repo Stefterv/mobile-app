@@ -50,6 +50,7 @@ import io.music_assistant.client.data.model.client.Chapter
 import io.music_assistant.client.data.model.client.ClickContext
 import io.music_assistant.client.data.model.client.ImageType
 import io.music_assistant.client.data.model.client.MediaType
+import io.music_assistant.client.data.model.client.ProviderDetails
 import io.music_assistant.client.data.model.client.QueueOption
 import io.music_assistant.client.data.model.client.SortField
 import io.music_assistant.client.data.model.client.SortOption
@@ -98,6 +99,7 @@ import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
 import io.music_assistant.client.ui.compose.item.artist.ArtistDetailsViewModel
 import io.music_assistant.client.ui.compose.item.artist.ArtistDetailsViewModel.Section
 import io.music_assistant.client.ui.compose.nav.TopBarLayout
+import io.music_assistant.client.ui.compose.provider.ProviderViewModel
 import io.music_assistant.client.ui.fullBleed
 import io.music_assistant.client.ui.theme.AppTheme
 import io.music_assistant.client.utils.gridItemMinSize
@@ -123,6 +125,7 @@ fun ItemDetailsScreen(
     itemDetailsViewModel: ItemDetailsViewModel,
     viewModeViewModel: ViewModeViewModel,
     actionsViewModel: ActionsViewModel,
+    providerViewModel: ProviderViewModel,
     onBack: () -> Unit,
     onNavigateToItem: (String, MediaType, String) -> Unit,
     onNavigateToList: (String, ItemList, ClickContext) -> Unit,
@@ -161,6 +164,7 @@ fun ItemDetailsScreen(
         onTabSelected = itemDetailsViewModel::onTabSelected,
         onLoadSimilarArtists = itemDetailsViewModel::loadSimilarArtists,
         onRefreshPlaylist = itemDetailsViewModel::refreshPlaylistTracks,
+        providerDetails = providerViewModel::getProviderDetails,
     )
 }
 
@@ -190,6 +194,7 @@ fun ItemDetails(
     onTabSelected: (ItemDetailsTab) -> Unit = {},
     onLoadSimilarArtists: () -> Unit = {},
     onRefreshPlaylist: () -> Unit = {},
+    providerDetails: (String) -> ProviderDetails? = { null },
 ) {
     val playlistActions = object : PlaylistActions {
         override suspend fun getEditablePlaylists(): List<Playlist> {
@@ -279,6 +284,7 @@ fun ItemDetails(
                     onTabSelected = onTabSelected,
                     onLoadSimilarArtists = onLoadSimilarArtists,
                     onRefreshPlaylist = onRefreshPlaylist,
+                    providerDetails = providerDetails,
                 )
             }
 
@@ -317,6 +323,7 @@ private fun ItemContent(
     onTabSelected: (ItemDetailsTab) -> Unit,
     onLoadSimilarArtists: () -> Unit,
     onRefreshPlaylist: () -> Unit,
+    providerDetails: (String) -> ProviderDetails?,
 ) {
     // Tabs, the loading gate, and the selected tab are all derived in ItemDetailsViewModel.State.
     val tabs = state.tabs
@@ -396,6 +403,7 @@ private fun ItemContent(
                         providerIconFetcher = providerIconFetcher,
                         contentPadding = contentPadding,
                         heroSlot = heroSlot,
+                        providerDetails = providerDetails,
                     )
                 }
             } else if (tabs.isEmpty()) {
@@ -905,6 +913,7 @@ private fun ArtistContent(
     providerIconFetcher: @Composable (Modifier, String) -> Unit,
     contentPadding: PaddingValues,
     heroSlot: @Composable () -> Unit,
+    providerDetails: (String) -> ProviderDetails?,
 ) {
     val artistDetailsViewModel = koinViewModel<ArtistDetailsViewModel> { parametersOf(artist) }
     val librarySection by artistDetailsViewModel.library.collectAsStateWithLifecycle()
@@ -929,6 +938,7 @@ private fun ArtistContent(
                     playlistActions = playlistActions,
                     libraryActions = libraryActions,
                     providerIconFetcher = providerIconFetcher,
+                    providerDetails = providerDetails,
                 )
             }
 
@@ -945,6 +955,7 @@ private fun ArtistContent(
                     playlistActions = playlistActions,
                     libraryActions = libraryActions,
                     providerIconFetcher = providerIconFetcher,
+                    providerDetails = providerDetails,
                 )
             }
 
@@ -961,6 +972,7 @@ private fun ArtistContent(
                     playlistActions = playlistActions,
                     libraryActions = libraryActions,
                     providerIconFetcher = providerIconFetcher,
+                    providerDetails = providerDetails,
                 )
             }
         }
@@ -980,7 +992,12 @@ private fun <T : AppMediaItem> SectionRow(
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
     providerIconFetcher: @Composable ((Modifier, String) -> Unit),
+    providerDetails: (String) -> ProviderDetails?,
 ) {
+    val providerNameDisplayString: (String) -> DisplayString = { domain ->
+        (providerDetails(domain)?.name ?: domain).toDisplayString()
+    }
+
     CategoryRow(
         data = sectionData,
         containerItem = artist,
@@ -992,9 +1009,9 @@ private fun <T : AppMediaItem> SectionRow(
                 list = section.itemList,
                 filter = if (section.providerFilter != null) {
                     ItemCategory.Filter(
-                        label = section.providerFilter.current.providerDomain.toDisplayString(),
+                        label = providerNameDisplayString(section.providerFilter.current.providerDomain),
                         options = section.providerFilter.options,
-                        labelTransform = { it.providerDomain.toDisplayString() },
+                        labelTransform = { providerNameDisplayString(it.providerDomain) },
                         contentDescription = Res.string.cd_provider_filter,
                     )
                 } else {

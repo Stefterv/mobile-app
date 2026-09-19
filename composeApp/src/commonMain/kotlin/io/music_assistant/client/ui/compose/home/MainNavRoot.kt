@@ -83,6 +83,7 @@ import io.music_assistant.client.ui.compose.nav.MultiBackStack
 import io.music_assistant.client.ui.compose.nav.NavigationItem
 import io.music_assistant.client.ui.compose.nav.ScreenState
 import io.music_assistant.client.ui.compose.nav.createNavigationItem
+import io.music_assistant.client.ui.compose.provider.ProviderViewModel
 import io.music_assistant.client.ui.compose.search.GlobalSearchRequest
 import io.music_assistant.client.ui.compose.search.SearchScreen
 import io.music_assistant.client.ui.compose.search.SearchScreenState
@@ -113,6 +114,7 @@ fun MainNavigationRoot(
     actionsViewModel: ActionsViewModel = koinViewModel(),
     viewModeViewModel: ViewModeViewModel = koinViewModel(),
     dspSettingsViewModel: DspSettingsViewModel = koinViewModel(),
+    providerViewModel: ProviderViewModel = koinViewModel(),
     goToSettings: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -316,6 +318,7 @@ fun MainNavigationRoot(
                                 homeScreenViewModel,
                                 actionsViewModel,
                                 viewModeViewModel,
+                                providerViewModel,
                                 homeScreenState,
                                 libraryScreenState,
                                 searchScreenState,
@@ -340,6 +343,7 @@ private fun mainNavEntryProvider(
     homeScreenViewModel: HomeScreenViewModel,
     actionsViewModel: ActionsViewModel,
     viewModeViewModel: ViewModeViewModel,
+    providerViewModel: ProviderViewModel,
     homeScreenState: MutableState<HomeScreenState?>,
     libraryScreenState: MutableState<LibraryScreenState?>,
     searchScreenState: MutableState<SearchScreenState?>,
@@ -548,6 +552,7 @@ private fun mainNavEntryProvider(
                 itemDetailsViewModel = itemDetailsViewModel,
                 viewModeViewModel = viewModeViewModel,
                 actionsViewModel = actionsViewModel,
+                providerViewModel = providerViewModel,
                 onBack = { multiBackStack.removeLastOrNull() },
                 onNavigateToItem = { itemId, mediaType, providerId ->
                     multiBackStack.add(
