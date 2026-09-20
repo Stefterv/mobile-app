@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.music_assistant.client.api.Request
 import io.music_assistant.client.api.ServiceClient
 import io.music_assistant.client.data.model.client.ProviderDetails
-import io.music_assistant.client.data.model.server.ProviderManifest
+import io.music_assistant.client.data.model.server.ServerProviderInstance
 import io.music_assistant.client.utils.resultAs
 import kotlinx.coroutines.launch
 
@@ -14,8 +14,8 @@ class ProviderViewModel(serviceClient: ServiceClient) : ViewModel() {
 
     init {
         viewModelScope.launch {
-            serviceClient.sendRequest(Request.Library.providersManifests())
-                .resultAs<List<ProviderManifest>>()?.filter { it.type == "music" }
+            serviceClient.sendRequest(Request.Library.providers())
+                .resultAs<List<ServerProviderInstance>>()?.filter { it.type == "music" }
                 ?.let { manifests ->
                     manifests.forEach {
                         providerDetails[it.domain] = ProviderDetails(it.name)
