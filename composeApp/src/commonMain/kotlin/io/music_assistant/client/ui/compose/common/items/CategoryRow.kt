@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -40,6 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.music_assistant.client.data.model.client.items.Album
@@ -422,7 +424,12 @@ private fun <T> FilterSelector(
             selected = true,
             onClick = { expanded = true },
             label = {
-                Text(label)
+                Text(
+                    label,
+                    modifier = Modifier.widthIn(max = 96.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             },
         )
 
