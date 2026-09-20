@@ -1588,7 +1588,7 @@ class MainDataSource(
      */
     private fun updateAiRadioAvailability() {
         launch {
-            val pluginLoaded = apiClient.sendRequest(Request.Library.providers())
+            val pluginLoaded = apiClient.sendRequest(Request.Provider.all())
                 .resultAs<List<ServerProviderInstance>>()
                 ?.any { it.domain == AI_RADIO_DOMAIN && it.available } == true
             if (!pluginLoaded) {

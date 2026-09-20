@@ -22,7 +22,7 @@ class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() 
 
     init {
         viewModelScope.launch {
-            serviceClient.sendRequest(Request.Library.providers())
+            serviceClient.sendRequest(Request.Provider.all())
                 .resultAs<List<ServerProviderInstance>>()?.filter { it.type == "music" }
                 ?.let { manifests ->
                     manifests.forEach {

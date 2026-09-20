@@ -11,7 +11,6 @@ import io.music_assistant.client.data.model.server.AuthProvider
 import io.music_assistant.client.data.model.server.DSPSettings
 import io.music_assistant.client.data.model.server.EventType
 import io.music_assistant.client.data.model.server.PlayerState
-import io.music_assistant.client.data.model.server.ProviderManifest
 import io.music_assistant.client.data.model.server.SearchResult
 import io.music_assistant.client.data.model.server.ServerInfo
 import io.music_assistant.client.data.model.server.ServerMediaItem
@@ -83,15 +82,6 @@ class FakeServiceClient : ServiceClient {
         }
 
         return when (request.command) {
-            APICommands.PROVIDERS_MANIFESTS -> {
-                Result.success(
-                    answer(
-                        request = request,
-                        result = emptyList<ProviderManifest>(),
-                    ),
-                )
-            }
-
             APICommands.PROVIDERS -> {
                 Result.success(
                     answer(
