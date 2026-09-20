@@ -11,6 +11,7 @@ import io.music_assistant.client.data.model.server.ServerMediaItem
 import io.music_assistant.client.data.model.server.ServerProviderInstance
 import io.music_assistant.client.ui.compose.common.icons.BookshelfIcon
 import io.music_assistant.client.ui.compose.common.providers.ProviderIconModel
+import io.music_assistant.client.utils.getOrPut
 import io.music_assistant.client.utils.resultAs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,16 +41,17 @@ class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() 
         val stateFlow = MutableStateFlow<ProviderIconModel?>(null)
 
         viewModelScope.launch {
-            val iconModel = if (domain == ServerMediaItem.LIBRARY_PROVIDER) {
-                ProviderIconModel.Mdi(BookshelfIcon, Color.White)
-            } else {
-                val iconSvg = fetchIconSvg(domain, variant)
-                if (iconSvg != null) ProviderIconModel.fromSvg(iconSvg) else null
+            val iconModel = providerIconsCache.getOrPut(domain) {
+                if (domain == ServerMediaItem.LIBRARY_PROVIDER) {
+                    ProviderIconModel.Mdi(BookshelfIcon, Color.White)
+                } else {
+                    val iconSvg = fetchIconSvg(domain, variant)
+                    if (iconSvg != null) ProviderIconModel.fromSvg(iconSvg) else null
+                }
             }
 
             if (iconModel != null) {
                 stateFlow.value = iconModel
-                providerIconsCache.put(domain, iconModel)
             }
         }
 
@@ -63,7 +65,8 @@ class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() 
         val darkIconResult =
             serviceClient.sendRequest(Request.Provider.icon(domain, variant)).resultAs<String>()
         val iconSvg =
-            darkIconResult ?: serviceClient.sendRequest(Request.Provider.icon(domain)).resultAs<String>()
+            darkIconResult ?: serviceClient.sendRequest(Request.Provider.icon(domain))
+                .resultAs<String>()
         return iconSvg
     }
 }
