@@ -56,7 +56,7 @@ import io.music_assistant.client.data.model.client.items.RecommendationFolder
 import io.music_assistant.client.input.VolumeButtonService
 import io.music_assistant.client.ui.compose.common.ToastDuration
 import io.music_assistant.client.ui.compose.common.ToastHost
-import io.music_assistant.client.ui.compose.common.providers.ProviderIcon
+import io.music_assistant.client.ui.compose.common.providers.providerIconFetcher
 import io.music_assistant.client.ui.compose.common.rememberToastState
 import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
 import io.music_assistant.client.ui.compose.home.players.DspSettingsViewModel
@@ -380,10 +380,7 @@ private fun mainNavEntryProvider(
                         else -> Unit
                     }
                 },
-                providerIconFetcher = { modifier, provider ->
-                    actionsViewModel.getProviderIcon(provider)
-                        ?.let { ProviderIcon(modifier, it) }
-                },
+                providerIconFetcher = providerViewModel.providerIconFetcher(),
                 actionsViewModel = actionsViewModel,
                 state = screenState,
             )
@@ -589,6 +586,7 @@ private fun mainNavEntryProvider(
                 },
                 contentPadding = contentPadding,
                 actionsViewModel = actionsViewModel,
+                providerViewModel = providerViewModel,
                 state = screenState,
                 pendingSearch = pendingSearch,
                 onSearchConsumed = { pendingSearch = null },

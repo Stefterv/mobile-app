@@ -94,6 +94,7 @@ object APICommands {
     const val MUSIC_RECOMMENDATIONS_ITEMS = "music/recommendations/items"
     const val PROVIDERS_MANIFESTS = "providers/manifests"
     const val PROVIDERS = "providers"
+    const val PROVIDERS_ICON = "providers/icon"
 
     // Items
     const val MUSIC_ITEM_BY_URI = "music/item_by_uri"

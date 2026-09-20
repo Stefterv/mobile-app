@@ -421,6 +421,15 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         )
     }
 
+    data object Provider {
+        fun icon(providerDomain: String) = Request(
+            command = APICommands.PROVIDERS_ICON,
+            args = buildJsonObject {
+                put("provider", JsonPrimitive(providerDomain))
+            },
+        )
+    }
+
     data object RadioStation {
         fun get(
             itemId: String,
@@ -620,7 +629,12 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
                 put("offset", JsonPrimitive(offset))
                 orderBy?.let { put("order_by", JsonPrimitive(it)) }
                 albumTypes?.takeIf { it.isNotEmpty() }
-                    ?.let { types -> put("album_types", JsonArray(types.map { JsonPrimitive(it) })) }
+                    ?.let { types ->
+                        put(
+                            "album_types",
+                            JsonArray(types.map { JsonPrimitive(it) }),
+                        )
+                    }
                 putListFilters(providers, genres)
             },
         )

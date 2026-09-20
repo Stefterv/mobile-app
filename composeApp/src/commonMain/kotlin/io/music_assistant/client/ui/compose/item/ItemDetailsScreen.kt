@@ -90,7 +90,7 @@ import io.music_assistant.client.ui.compose.common.items.TrackWithMenu
 import io.music_assistant.client.ui.compose.common.items.lazyListOccurrenceKeys
 import io.music_assistant.client.ui.compose.common.items.playableLazyListOccurrenceKeys
 import io.music_assistant.client.ui.compose.common.items.supportsAddToPlaylist
-import io.music_assistant.client.ui.compose.common.providers.ProviderIcon
+import io.music_assistant.client.ui.compose.common.providers.providerIconFetcher
 import io.music_assistant.client.ui.compose.common.rememberAnimatedPlayerColors
 import io.music_assistant.client.ui.compose.common.rememberDynamicColorsEnabled
 import io.music_assistant.client.ui.compose.common.rememberExtractedColorsSource
@@ -153,10 +153,7 @@ fun ItemDetailsScreen(
         onRemoveFromPlaylist = { id, pos ->
             actionsViewModel.removeFromPlaylist(id, pos, itemDetailsViewModel::reload)
         },
-        providerIconFetcher = { modifier, provider ->
-            actionsViewModel.getProviderIcon(provider)
-                ?.let { ProviderIcon(modifier, it) }
-        },
+        providerIconFetcher = providerViewModel.providerIconFetcher(),
         onPlayClick = itemDetailsViewModel::onPlayClick,
         onChapterClick = itemDetailsViewModel::onChapterClick,
         onChildPlayClick = itemDetailsViewModel::onPlayClick,
