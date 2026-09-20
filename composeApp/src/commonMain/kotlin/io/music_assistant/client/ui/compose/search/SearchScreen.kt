@@ -66,6 +66,7 @@ import io.music_assistant.client.ui.compose.common.items.ProvideClickActions
 import io.music_assistant.client.ui.compose.common.items.RadioWithMenu
 import io.music_assistant.client.ui.compose.common.items.TrackWithMenu
 import io.music_assistant.client.ui.compose.common.items.lazyListOccurrenceKeys
+import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
 import io.music_assistant.client.ui.compose.common.providers.providerIconFetcher
 import io.music_assistant.client.ui.compose.common.rememberToastState
 import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
@@ -232,7 +233,7 @@ private fun SearchContent(
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
     progressActions: ProgressActions? = null,
-    providerIconFetcher: (@Composable (Modifier, String) -> Unit),
+    providerIconFetcher: ProviderIconFetcher,
     contentPadding: PaddingValues,
     lazyListState: LazyListState,
 ) {

@@ -36,15 +36,14 @@ class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() 
         return providerDetails[domain]
     }
 
-    fun getProviderIcon(domain: String): StateFlow<ProviderIconModel?> {
+    fun getProviderIcon(domain: String, variant: String): StateFlow<ProviderIconModel?> {
         val stateFlow = MutableStateFlow<ProviderIconModel?>(null)
 
         viewModelScope.launch {
             val iconModel = if (domain == ServerMediaItem.LIBRARY_PROVIDER) {
                 ProviderIconModel.Mdi(BookshelfIcon, Color.White)
             } else {
-                val iconSvg =
-                    serviceClient.sendRequest(Request.Provider.icon(domain)).resultAs<String>()
+                val iconSvg = fetchIconSvg(domain, variant)
                 if (iconSvg != null) ProviderIconModel.fromSvg(iconSvg) else null
             }
 
@@ -55,5 +54,16 @@ class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() 
         }
 
         return stateFlow
+    }
+
+    /**
+     * Fetches [variant] version of provider icon and fallback to default if it that doesn't exist
+     */
+    private suspend fun fetchIconSvg(domain: String, variant: String): String? {
+        val darkIconResult =
+            serviceClient.sendRequest(Request.Provider.icon(domain, variant)).resultAs<String>()
+        val iconSvg =
+            darkIconResult ?: serviceClient.sendRequest(Request.Provider.icon(domain)).resultAs<String>()
+        return iconSvg
     }
 }

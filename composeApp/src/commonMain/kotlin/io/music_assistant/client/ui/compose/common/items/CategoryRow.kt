@@ -56,6 +56,7 @@ import io.music_assistant.client.data.model.client.items.RadioStation
 import io.music_assistant.client.data.model.client.items.Track
 import io.music_assistant.client.ui.compose.common.DataState
 import io.music_assistant.client.ui.compose.common.DisplayString
+import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
 import io.music_assistant.client.ui.compose.common.toDisplayString
 import io.music_assistant.client.ui.compose.item.ItemList
 import musicassistantclient.composeapp.generated.resources.Res
@@ -75,7 +76,7 @@ fun <T, U> CategoryRow(
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
     progressActions: ProgressActions? = null,
-    providerIconFetcher: (@Composable (Modifier, String) -> Unit),
+    providerIconFetcher: ProviderIconFetcher,
 ) {
     if (data is DataState.Data) {
         CategoryRow(
@@ -142,7 +143,7 @@ fun <T> CategoryRow(
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
     progressActions: ProgressActions? = null,
-    providerIconFetcher: (@Composable (Modifier, String) -> Unit),
+    providerIconFetcher: ProviderIconFetcher,
 ) {
     if (itemCategory.items.isEmpty() && itemCategory.filter == null) {
         return
@@ -194,7 +195,7 @@ fun CategoryRow(
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
     progressActions: ProgressActions? = null,
-    providerIconFetcher: (@Composable (Modifier, String) -> Unit),
+    providerIconFetcher: ProviderIconFetcher,
     rowTag: String? = null,
 ) {
     val modifier = if (rowTag != null) {
@@ -482,7 +483,7 @@ fun PreviewCategoryRowEmpty() {
                 TODO("Not yet implemented")
             }
         },
-        providerIconFetcher = { _, _ -> },
+        providerIconFetcher = { _, _, _ -> },
     )
 }
 
@@ -522,7 +523,7 @@ fun PreviewCategoryLoading() {
                 TODO("Not yet implemented")
             }
         },
-        providerIconFetcher = { _, _ -> },
+        providerIconFetcher = { _, _, _ -> },
     )
 }
 
@@ -562,6 +563,6 @@ fun PreviewCategoryNoData() {
                 TODO("Not yet implemented")
             }
         },
-        providerIconFetcher = { _, _ -> },
+        providerIconFetcher = { _, _, _ -> },
     )
 }

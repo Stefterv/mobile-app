@@ -65,6 +65,7 @@ import io.music_assistant.client.ui.compose.common.items.ItemCategory
 import io.music_assistant.client.ui.compose.common.items.ProvideClickActions
 import io.music_assistant.client.ui.compose.common.items.lazyListKey
 import io.music_assistant.client.ui.compose.common.moveToEnabledBoundary
+import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
 import io.music_assistant.client.ui.compose.common.toDisplayString
 import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
 import io.music_assistant.client.ui.compose.nav.BackHandler
@@ -88,7 +89,7 @@ fun HomeScreen(
     homeScreenViewModel: HomeScreenViewModel,
     contentPadding: PaddingValues,
     onNavigateClick: (AppMediaItem) -> Unit,
-    providerIconFetcher: (@Composable (Modifier, String) -> Unit),
+    providerIconFetcher: ProviderIconFetcher,
     actionsViewModel: ActionsViewModel,
     state: HomeScreenState,
 ) {

@@ -62,9 +62,19 @@ fun ProviderIcon(
     }
 }
 
-fun ProviderViewModel.providerIconFetcher(): (@Composable (Modifier, String) -> Unit) {
-    return { modifier, providerDomain ->
-        val providerIconModel by remember { this.getProviderIcon(providerDomain) }.collectAsStateWithLifecycle()
+typealias ProviderIconFetcher = (@Composable (modifier: Modifier, providerDomain: String, variant: String) -> Unit)
+fun ProviderViewModel.providerIconFetcher(): (
+    @Composable (
+    modifier: Modifier,
+    providerDomain: String,
+    variant: String,
+) -> Unit
+) {
+    return { modifier, providerDomain, variant ->
+        val providerIconModel by remember {
+            this.getProviderIcon(providerDomain, variant)
+        }.collectAsStateWithLifecycle()
+
         if (providerIconModel != null) {
             ProviderIcon(modifier, providerIconModel)
         }

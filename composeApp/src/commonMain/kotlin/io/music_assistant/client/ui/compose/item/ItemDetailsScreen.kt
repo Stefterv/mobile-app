@@ -90,6 +90,7 @@ import io.music_assistant.client.ui.compose.common.items.TrackWithMenu
 import io.music_assistant.client.ui.compose.common.items.lazyListOccurrenceKeys
 import io.music_assistant.client.ui.compose.common.items.playableLazyListOccurrenceKeys
 import io.music_assistant.client.ui.compose.common.items.supportsAddToPlaylist
+import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
 import io.music_assistant.client.ui.compose.common.providers.providerIconFetcher
 import io.music_assistant.client.ui.compose.common.rememberAnimatedPlayerColors
 import io.music_assistant.client.ui.compose.common.rememberDynamicColorsEnabled
@@ -183,7 +184,7 @@ fun ItemDetails(
     onMarkPlayed: (AppMediaItem) -> Unit = {},
     onMarkUnplayed: (AppMediaItem) -> Unit = {},
     onRemoveFromPlaylist: (String, Int) -> Unit = { _, _ -> },
-    providerIconFetcher: @Composable (Modifier, String) -> Unit = { _, _ -> },
+    providerIconFetcher: ProviderIconFetcher = { _, _, _ -> },
     onPlayClick: (QueueOption, Boolean) -> Unit = { _, _ -> },
     onChapterClick: (Int) -> Unit = {},
     onChildPlayClick: PlayHandler<AppMediaItem> = { _, _, _, _ -> },
@@ -310,7 +311,7 @@ private fun ItemContent(
     progressActions: ProgressActions?,
     onRemoveFromPlaylist: (String, Int) -> Unit,
     libraryActions: LibraryActions,
-    providerIconFetcher: @Composable (Modifier, String) -> Unit,
+    providerIconFetcher: ProviderIconFetcher,
     fetchColors: ExtractedColorsSource?,
     onBack: () -> Unit,
     viewModeProvider: @Composable (MediaType) -> ViewMode,
@@ -567,7 +568,7 @@ private fun TabContent(
     progressActions: ProgressActions?,
     onRemoveFromPlaylist: (String, Int) -> Unit,
     libraryActions: LibraryActions,
-    providerIconFetcher: @Composable (Modifier, String) -> Unit,
+    providerIconFetcher: ProviderIconFetcher,
     contentPadding: PaddingValues,
     heroSlot: @Composable () -> Unit,
     tabsSlot: @Composable () -> Unit,
@@ -730,7 +731,7 @@ private fun AlbumsTabContent(
     onPlayChildClick: PlayHandler<AppMediaItem>,
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
-    providerIconFetcher: @Composable (Modifier, String) -> Unit,
+    providerIconFetcher: ProviderIconFetcher,
     contentPadding: PaddingValues,
     heroSlot: @Composable () -> Unit,
     tabsSlot: @Composable () -> Unit,
@@ -772,7 +773,7 @@ private fun ArtistsTabContent(
     onNavigateClick: (AppMediaItem) -> Unit,
     onPlayChildClick: PlayHandler<AppMediaItem>,
     libraryActions: LibraryActions,
-    providerIconFetcher: @Composable (Modifier, String) -> Unit,
+    providerIconFetcher: ProviderIconFetcher,
     contentPadding: PaddingValues,
     heroSlot: @Composable () -> Unit,
     tabsSlot: @Composable () -> Unit,
@@ -815,7 +816,7 @@ private fun PlayablesTabContent(
     progressActions: ProgressActions?,
     onRemoveFromPlaylist: (String, Int) -> Unit,
     libraryActions: LibraryActions,
-    providerIconFetcher: @Composable (Modifier, String) -> Unit,
+    providerIconFetcher: ProviderIconFetcher,
     contentPadding: PaddingValues,
     heroSlot: @Composable () -> Unit,
     tabsSlot: @Composable () -> Unit,
@@ -907,7 +908,7 @@ private fun ArtistContent(
     onPlayChildClick: PlayHandler<AppMediaItem>,
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
-    providerIconFetcher: @Composable (Modifier, String) -> Unit,
+    providerIconFetcher: ProviderIconFetcher,
     contentPadding: PaddingValues,
     heroSlot: @Composable () -> Unit,
     providerDetails: (String) -> ProviderDetails?,
@@ -988,7 +989,7 @@ private fun <T : AppMediaItem> SectionRow(
     onPlayChildClick: PlayHandler<AppMediaItem>,
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
-    providerIconFetcher: @Composable ((Modifier, String) -> Unit),
+    providerIconFetcher: ProviderIconFetcher,
     providerDetails: (String) -> ProviderDetails?,
 ) {
     val providerNameDisplayString: (String) -> DisplayString = { domain ->

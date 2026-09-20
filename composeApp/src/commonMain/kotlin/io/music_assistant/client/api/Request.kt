@@ -425,10 +425,14 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
     data object Provider {
         fun all() = Request(command = APICommands.PROVIDERS)
 
-        fun icon(providerDomain: String) = Request(
+        fun icon(providerDomain: String, variant: String? = null) = Request(
             command = APICommands.PROVIDERS_ICON,
             args = buildJsonObject {
                 put("provider", JsonPrimitive(providerDomain))
+
+                if (variant != null) {
+                    put("variant", JsonPrimitive(variant))
+                }
             },
         )
     }
