@@ -1,5 +1,6 @@
 package io.music_assistant.client.ui.compose.provider
 
+import androidx.collection.LruCache
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 
 class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() {
     private val providerDetails = mutableMapOf<String, ProviderDetails>()
+    private val providerIconsCache = LruCache<String, ProviderIconModel>(10)
 
     init {
         viewModelScope.launch {
@@ -37,15 +39,18 @@ class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() 
     fun getProviderIcon(domain: String): StateFlow<ProviderIconModel?> {
         val stateFlow = MutableStateFlow<ProviderIconModel?>(null)
 
-        if (domain == ServerMediaItem.LIBRARY_PROVIDER) {
-            stateFlow.value = ProviderIconModel.Mdi(BookshelfIcon, Color.White)
-        } else {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            val iconModel = if (domain == ServerMediaItem.LIBRARY_PROVIDER) {
+                ProviderIconModel.Mdi(BookshelfIcon, Color.White)
+            } else {
                 val iconSvg =
                     serviceClient.sendRequest(Request.Provider.icon(domain)).resultAs<String>()
-                if (iconSvg != null) {
-                    stateFlow.value = ProviderIconModel.fromSvg(iconSvg)
-                }
+                if (iconSvg != null) ProviderIconModel.fromSvg(iconSvg) else null
+            }
+
+            if (iconModel != null) {
+                stateFlow.value = iconModel
+                providerIconsCache.put(domain, iconModel)
             }
         }
 
