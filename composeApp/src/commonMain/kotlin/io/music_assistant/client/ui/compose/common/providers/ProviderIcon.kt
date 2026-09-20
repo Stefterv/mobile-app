@@ -11,8 +11,8 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import io.music_assistant.client.ui.compose.provider.ProviderViewModel
-import musicassistantclient.composeapp.generated.resources.*
 import musicassistantclient.composeapp.generated.resources.Res
+import musicassistantclient.composeapp.generated.resources.cd_provider_icon
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -31,14 +31,6 @@ fun ProviderIcon(
             Icon(
                 imageVector = providerIconModel.icon,
                 contentDescription = stringResource(Res.string.cd_provider_icon),
-                modifier = modifier,
-                tint = providerIconModel.tint,
-            )
-        }
-
-        is ProviderIconModel.MdiGlyph -> {
-            MdiIcon(
-                name = providerIconModel.name,
                 modifier = modifier,
                 tint = providerIconModel.tint,
             )

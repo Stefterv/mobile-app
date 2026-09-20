@@ -1,6 +1,5 @@
 package io.music_assistant.client.ui.compose.provider
 
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -44,7 +43,9 @@ class ProviderViewModel(private val serviceClient: ServiceClient) : ViewModel() 
             viewModelScope.launch {
                 val iconSvg =
                     serviceClient.sendRequest(Request.Provider.icon(domain)).resultAs<String>()
-                stateFlow.value = ProviderIconModel.from(null, iconSvg)
+                if (iconSvg != null) {
+                    stateFlow.value = ProviderIconModel.fromSvg(iconSvg)
+                }
             }
         }
 
