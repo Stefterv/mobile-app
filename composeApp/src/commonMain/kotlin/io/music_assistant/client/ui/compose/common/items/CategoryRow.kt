@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
@@ -106,7 +108,7 @@ fun <T, U> CategoryRow(
         RowWithTitle(
             title = {
                 val height = with(LocalDensity.current) {
-                    LocalTextStyle.current.fontSize.toDp()
+                    LocalTextStyle.current.fontSize.toDp() + 4.dp
                 }
 
                 Box(
@@ -124,7 +126,8 @@ fun <T, U> CategoryRow(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(placeholderColor)
-                                .size(width = placeholderWidth, height = 152.dp),
+                                .width(placeholderWidth)
+                                .fillMaxHeight(),
                         )
                     }
                 }
@@ -331,7 +334,7 @@ private fun RowWithTitle(
     Column(modifier) {
         Row(
             modifier = Modifier
-                .height(72.dp)
+                .height(56.dp)
                 .fillMaxWidth()
                 .padding(start = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
