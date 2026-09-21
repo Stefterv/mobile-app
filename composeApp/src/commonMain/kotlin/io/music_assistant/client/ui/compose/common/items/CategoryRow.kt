@@ -333,7 +333,7 @@ private fun RowWithTitle(
             modifier = Modifier
                 .height(72.dp)
                 .fillMaxWidth()
-                .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
