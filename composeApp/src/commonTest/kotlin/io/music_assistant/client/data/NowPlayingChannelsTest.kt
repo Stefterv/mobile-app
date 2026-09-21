@@ -157,10 +157,17 @@ class NowPlayingRadioStreamMetadataTest {
 
     @Test
     fun radioDisablesQueueModeControls() {
-        for (dynamic in listOf(false, true)) {
-            val data = playerData(testRadio(), queueInfo(queueId = "queue-1", isDynamicPlaylist = dynamic))
-            assertFalse(buildNowPlayingModes(data)!!.togglesEnabled)
-        }
+        val regularQueueData = playerData(
+            testRadio(),
+            queueInfo(queueId = "queue-1", isDynamicPlaylist = false),
+        )
+        assertFalse(buildNowPlayingModes(regularQueueData)!!.togglesEnabled)
+
+        val dynamicQueueData = playerData(
+            testRadio(),
+            queueInfo(queueId = "queue-1", isDynamicPlaylist = true),
+        )
+        assertFalse(buildNowPlayingModes(dynamicQueueData)!!.togglesEnabled)
     }
 
     @Test
