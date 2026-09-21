@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -330,6 +331,7 @@ private fun RowWithTitle(
     Column(modifier) {
         Row(
             modifier = Modifier
+                .height(72.dp)
                 .fillMaxWidth()
                 .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -348,6 +350,7 @@ private fun RowWithTitle(
 
         val rowListState = rememberLazyListState()
         LazyRow(
+            modifier = Modifier.height(184.dp),
             state = rowListState,
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
