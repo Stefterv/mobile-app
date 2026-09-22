@@ -10,9 +10,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +46,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,8 +78,8 @@ import io.music_assistant.client.ui.compose.common.painters.rememberPlaceholderP
 import io.music_assistant.client.ui.compose.common.painters.rememberVinylRecordPainter
 import io.music_assistant.client.ui.compose.common.painters.rememberWaveformPainter
 import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
+import io.music_assistant.client.ui.compose.grid.GridItem
 import io.music_assistant.client.ui.theme.favoriteTint
-import io.music_assistant.client.utils.gridItemMinSize
 import io.music_assistant.client.utils.rowImageSize
 import musicassistantclient.composeapp.generated.resources.Res
 import musicassistantclient.composeapp.generated.resources.cd_album_item
@@ -749,42 +748,6 @@ private fun GridPlayableItemLabels(item: PlayableItem) {
     )
 }
 
-/**
- * Common wrapper for media items with click handling.
- */
-@Composable
-fun GridItem(
-    modifier: Modifier = Modifier,
-    description: String?,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    BoxWithConstraints(
-        modifier = Modifier.clearAndSetSemantics {
-            if (description != null) {
-                contentDescription = description
-            }
-        },
-    ) {
-        val cellWidthModifier = if (constraints.hasBoundedWidth) {
-            Modifier.fillMaxWidth()
-        } else {
-            Modifier.width(gridItemMinSize())
-        }
-        Column(
-            modifier = cellWidthModifier
-                .then(modifier)
-                .clip(RoundedCornerShape(8.dp))
-                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-                .padding(4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            content()
-        }
-    }
-}
-
 @Composable
 fun BoxScope.Badges(
     item: AppMediaItem,
@@ -1255,14 +1218,14 @@ internal fun MediaItemLabels(
     Text(
         modifier = Modifier.fillMaxWidth(),
         text = title,
-        style = MaterialTheme.typography.bodyMedium,
+        style = mediaItemTitleStyle(),
         fontWeight = MEDIA_TITLE_WEIGHT,
         textAlign = textAlign,
         maxLines = titleMaxLines,
         overflow = TextOverflow.Ellipsis,
     )
 
-    val subtitleStyle = MaterialTheme.typography.bodySmall
+    val subtitleStyle = mediaItemSubtitleStyle()
     val subtitleLineHeight = with(LocalDensity.current) {
         subtitleStyle.lineHeight.toDp()
     }
@@ -1339,6 +1302,16 @@ internal fun RowItem(
         }
         suffixContent?.invoke(this)
     }
+}
+
+@Composable
+internal fun mediaItemTitleStyle(): TextStyle {
+    return MaterialTheme.typography.bodyMedium
+}
+
+@Composable
+internal fun mediaItemSubtitleStyle(): TextStyle {
+    return MaterialTheme.typography.bodySmall
 }
 
 @Composable

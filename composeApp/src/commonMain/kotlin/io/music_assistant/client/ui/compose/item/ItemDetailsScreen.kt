@@ -97,13 +97,13 @@ import io.music_assistant.client.ui.compose.common.rememberDynamicColorsEnabled
 import io.music_assistant.client.ui.compose.common.rememberExtractedColorsSource
 import io.music_assistant.client.ui.compose.common.toDisplayString
 import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
+import io.music_assistant.client.ui.compose.grid.gridItemMinSize
 import io.music_assistant.client.ui.compose.item.artist.ArtistDetailsViewModel
 import io.music_assistant.client.ui.compose.item.artist.ArtistDetailsViewModel.Section
 import io.music_assistant.client.ui.compose.nav.TopBarLayout
 import io.music_assistant.client.ui.compose.provider.ProviderViewModel
 import io.music_assistant.client.ui.fullBleed
 import io.music_assistant.client.ui.theme.AppTheme
-import io.music_assistant.client.utils.gridItemMinSize
 import musicassistantclient.composeapp.generated.resources.Res
 import musicassistantclient.composeapp.generated.resources.album_disc_header
 import musicassistantclient.composeapp.generated.resources.artist_section_all

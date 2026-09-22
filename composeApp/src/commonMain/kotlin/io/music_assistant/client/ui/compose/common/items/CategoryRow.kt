@@ -61,8 +61,9 @@ import io.music_assistant.client.ui.compose.common.DataState
 import io.music_assistant.client.ui.compose.common.DisplayString
 import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
 import io.music_assistant.client.ui.compose.common.toDisplayString
+import io.music_assistant.client.ui.compose.grid.GridItem
+import io.music_assistant.client.ui.compose.grid.gridItemMinSize
 import io.music_assistant.client.ui.compose.item.ItemList
-import io.music_assistant.client.utils.gridItemMinSize
 import musicassistantclient.composeapp.generated.resources.Res
 import musicassistantclient.composeapp.generated.resources.cd_view_all
 import org.jetbrains.compose.resources.StringResource
@@ -576,8 +577,8 @@ fun PlaceholderGridItem(
 
         Spacer(Modifier.height(4.dp))
 
-        PlaceHolderText(Modifier.fillMaxWidth(fraction = 0.9f), color, MaterialTheme.typography.bodyMedium)
-        PlaceHolderText(Modifier.fillMaxWidth(fraction = 0.5f), color, MaterialTheme.typography.bodySmall)
+        PlaceHolderText(Modifier.fillMaxWidth(fraction = 0.9f), color, mediaItemTitleStyle())
+        PlaceHolderText(Modifier.fillMaxWidth(fraction = 0.5f), color, mediaItemSubtitleStyle())
     }
 }
 
