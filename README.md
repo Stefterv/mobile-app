@@ -44,7 +44,7 @@ The goal of this app is to provide an iOS and Android native feeling experience 
 - Start browsing library
 - Open settings
 
-The app's built-in Local player is designed to be a private player for a personal music experience. It plays music on your device, for you, while you're using it. This is different from the many other players Music Assistant supports, like speakers, that stay on and available all the time. The app's Local player isn't meant to be one of those, and you can't find it or control it from other apps.
+The app's built-in Local player is designed to be a private player for a personal music experience. It plays music on your device, for you, while you're using it. This is different from the many other players Music Assistant supports, like speakers, that stay on and available all the time. The app's Local player isn't meant to be one of those, and by default you can't find it or control it from other apps.
 
 Compatibility with Apple CarPlay and Android Auto is a core focus, ensuring you can enjoy your music easily and safely through your car’s infotainment system. These in-car experiences are dedicated exclusively to the local player; managing external players is out of scope.
 
