@@ -45,6 +45,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -752,17 +753,19 @@ private fun GridPlayableItemLabels(item: PlayableItem) {
  * Common wrapper for media items with click handling.
  */
 @Composable
-private fun GridItem(
+fun GridItem(
     modifier: Modifier = Modifier,
-    description: String,
+    description: String?,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BoxWithConstraints(
         modifier = Modifier.clearAndSetSemantics {
-        contentDescription = description
-    },
+            if (description != null) {
+                contentDescription = description
+            }
+        },
     ) {
         val cellWidthModifier = if (constraints.hasBoundedWidth) {
             Modifier.fillMaxWidth()
@@ -1258,17 +1261,25 @@ internal fun MediaItemLabels(
         maxLines = titleMaxLines,
         overflow = TextOverflow.Ellipsis,
     )
-    if (!subtitle.isNullOrBlank()) {
-        Text(
-            modifier = Modifier.fillMaxWidth(),
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = MEDIA_TITLE_WEIGHT,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = SUBTITLE_ALPHA),
-            textAlign = textAlign,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+
+    val subtitleStyle = MaterialTheme.typography.bodySmall
+    val subtitleLineHeight = with(LocalDensity.current) {
+        subtitleStyle.lineHeight.toDp()
+    }
+
+    Box(modifier = Modifier.height(subtitleLineHeight)) {
+        if (!subtitle.isNullOrBlank()) {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = subtitle,
+                style = subtitleStyle,
+                fontWeight = MEDIA_TITLE_WEIGHT,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = SUBTITLE_ALPHA),
+                textAlign = textAlign,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

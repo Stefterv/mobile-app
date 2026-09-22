@@ -11,12 +11,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
@@ -44,6 +43,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -62,6 +62,7 @@ import io.music_assistant.client.ui.compose.common.DisplayString
 import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
 import io.music_assistant.client.ui.compose.common.toDisplayString
 import io.music_assistant.client.ui.compose.item.ItemList
+import io.music_assistant.client.utils.gridItemMinSize
 import musicassistantclient.composeapp.generated.resources.Res
 import musicassistantclient.composeapp.generated.resources.cd_view_all
 import org.jetbrains.compose.resources.StringResource
@@ -95,7 +96,6 @@ fun <T, U> CategoryRow(
             providerIconFetcher = providerIconFetcher,
         )
     } else if (data is DataState.Loading) {
-        val placeholderWidth = 140.dp
         val placeholderColor by rememberInfiniteTransition().animateColor(
             initialValue = Color.Gray.copy(alpha = 0.1f),
             targetValue = Color.Gray.copy(alpha = 0.3f),
@@ -107,28 +107,13 @@ fun <T, U> CategoryRow(
 
         RowWithTitle(
             title = {
-                val height = with(LocalDensity.current) {
-                    LocalTextStyle.current.fontSize.toDp() + 4.dp
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(placeholderColor)
-                        .size(width = placeholderWidth, height = height),
-                )
+                PlaceHolderText(Modifier.widthIn(gridItemMinSize()), placeholderColor, LocalTextStyle.current)
             },
             actions = {},
             row = {
                 repeat(PLACEHOLDER_ITEMS) {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(placeholderColor)
-                                .width(placeholderWidth)
-                                .fillMaxHeight(),
-                        )
+                        PlaceholderGridItem(placeholderColor)
                     }
                 }
             },
@@ -353,7 +338,6 @@ private fun RowWithTitle(
 
         val rowListState = rememberLazyListState()
         LazyRow(
-            modifier = Modifier.height(184.dp),
             state = rowListState,
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -570,5 +554,45 @@ fun PreviewCategoryNoData() {
             }
         },
         providerIconFetcher = { _, _, _ -> },
+    )
+}
+
+@Composable
+fun PlaceholderGridItem(
+    color: Color,
+) {
+    GridItem(
+        description = null,
+        onClick = {  },
+        onLongClick = {  },
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(color)
+                .fillMaxWidth()
+                .aspectRatio(1f),
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        PlaceHolderText(Modifier.fillMaxWidth(fraction = 0.9f), color, MaterialTheme.typography.bodyMedium)
+        PlaceHolderText(Modifier.fillMaxWidth(fraction = 0.5f), color, MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun PlaceHolderText(modifier: Modifier, color: Color, textStyle: TextStyle) {
+    val padding = 2.dp
+    val bodyMediumHeight = with(LocalDensity.current) {
+        textStyle.lineHeight.toDp() - padding * 2
+    }
+
+    Box(
+        modifier = modifier
+            .padding(padding)
+            .clip(RoundedCornerShape(8.dp))
+            .background(color)
+            .height(bodyMediumHeight),
     )
 }
