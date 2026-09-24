@@ -44,14 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.ui.compose.common.localizedTitle
@@ -149,6 +147,9 @@ fun SenspingSettingsManager(
             path = path,
         ) else SendspinConnectionSettings.defaults,
     )
+
+    // TODO: add debounce for changing settings
+
     val updateSetting = { settings: SendspinPlayerSettings ->
         if (enabled != settings.enabled) onEnabledChange(settings.enabled)
         if (deviceName != settings.name) onDeviceNameChange(settings.name ?: platformDeviceName())
@@ -174,19 +175,35 @@ fun SenspingSettingsManager(
             settings.connectionOverride.path ?: ""
         )
     }
+    var newSettings by remember(savedSettings){
+        mutableStateOf(
+            savedSettings.copy(
+                connectionOverride = savedSettings.connectionOverride.copy()
+            )
+        )
+    }
 
     CompositionLocalProvider(
-        LocalSendSpinSettings provides Pair(savedSettings) { updateFunction ->
-            val newSettings = savedSettings
+        LocalSendSpinSettings provides Pair(newSettings) { updateFunction ->
+            newSettings = newSettings
                 .copy(
-                    connectionOverride = savedSettings.connectionOverride.copy()
+                    connectionOverride = newSettings.connectionOverride.copy()
                 )
                 .apply(updateFunction)
-            updateSetting(newSettings)
         }
     ) {
-        Text(savedSettings.toString())
-        SendspinSection()
+        SendspinSection{
+            ActionButtonsSection(
+                isSavable = newSettings != savedSettings,
+                onResetToDefaults = {
+                    newSettings = SendspinPlayerSettings.defaults
+                    updateSetting(SendspinPlayerSettings.defaults)
+                },
+                onSaveChanges = {
+                    updateSetting(newSettings)
+                }
+            )
+        }
     }
 
 }
@@ -195,10 +212,10 @@ fun SenspingSettingsManager(
 @Composable
 fun SendspinSection(
     modifier: Modifier = Modifier,
+    trailingSection: @Composable (() -> Unit) = {  },
 ) {
     // TODO: Show expanded advanced config if any of the advanced config is set to non-default value
-    val (settings, _) = LocalSendSpinSettings.current
-    var showAdvancedConfig by remember { mutableStateOf(settings.bufferCapacityMb != null || settings.connectionOverride.enabled) }
+    var showAdvancedConfig by remember { mutableStateOf(false) }
 
     Column {
         SendspinHeader()
@@ -218,6 +235,7 @@ fun SendspinSection(
             AnimatedVisibility(visible = showAdvancedConfig) {
                 AdvancedConfigSection()
             }
+            trailingSection()
         }
     }
 }
@@ -344,6 +362,7 @@ private fun AdvancedConfigToggleSection(
 
 @Composable
 private fun ActionButtonsSection(
+    isSavable: Boolean = false,
     onResetToDefaults: () -> Unit,
     onSaveChanges: () -> Unit,
 ) {
@@ -368,7 +387,7 @@ private fun ActionButtonsSection(
         FilledTonalButton(
             modifier = Modifier.weight(1f),
             onClick = onSaveChanges,
-            enabled = false, // TODO: Enable when changes are detected
+            enabled = isSavable,
             contentPadding = PaddingValues(0.dp)
         ) {
             Icon(
