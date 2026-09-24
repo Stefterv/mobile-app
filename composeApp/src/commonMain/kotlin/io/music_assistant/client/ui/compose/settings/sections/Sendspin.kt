@@ -224,7 +224,7 @@ fun SendspinSettingsManager(
                         }
                         TextButton(
                             onClick = {
-                                commitSettings()
+                                showInterruptionDialog?.invoke()
                                 showInterruptionDialog = null
                             },
                         ) {
@@ -258,10 +258,7 @@ fun SendspinSettingsManager(
             ActionButtonsSection(
                 isResettable = newSettings != SendspinPlayerSettings.defaults,
                 onResetToDefaults = {
-                    showInterruptionDialog = {
-                        newSettings = SendspinPlayerSettings.defaults
-                        updateSetting(SendspinPlayerSettings.defaults)
-                    }
+                    newSettings = SendspinPlayerSettings.defaults
                 },
                 isSavable = newSettings != savedSettings,
                 onSaveChanges = {
