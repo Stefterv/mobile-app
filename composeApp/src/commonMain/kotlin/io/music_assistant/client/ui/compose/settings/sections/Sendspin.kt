@@ -88,6 +88,7 @@ import musicassistantclient.composeapp.generated.resources.settings_port_default
 import musicassistantclient.composeapp.generated.resources.settings_port_placeholder
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_advanced_summary
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_advanced_title
+import musicassistantclient.composeapp.generated.resources.settings_sendspin_intro
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_reset_defaults
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_save_changes
 import musicassistantclient.composeapp.generated.resources.settings_use_tls_ws
@@ -322,6 +323,12 @@ fun SendspinSection(
             ),
             shape = RoundedCornerShape(12.dp),
         ) {
+            Text(
+                text = stringResource(Res.string.settings_sendspin_intro),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+            )
             DeviceNameSection()
             CodecPreferenceSection()
             AdvancedConfigToggleSection(
