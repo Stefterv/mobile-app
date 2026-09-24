@@ -64,9 +64,12 @@ import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.ui.compose.common.localizedTitle
 import io.music_assistant.client.utils.platformDeviceName
 import io.music_assistant.sendspin.api.AudioCodec
-import kotlin.math.roundToInt
 import musicassistantclient.composeapp.generated.resources.Res
+import musicassistantclient.composeapp.generated.resources.button_cancel
+import musicassistantclient.composeapp.generated.resources.button_confirm
 import musicassistantclient.composeapp.generated.resources.cd_select_codec
+import musicassistantclient.composeapp.generated.resources.dialog_interrupting_playback
+import musicassistantclient.composeapp.generated.resources.dialog_interrupting_playback_message
 import musicassistantclient.composeapp.generated.resources.settings_buffer_size
 import musicassistantclient.composeapp.generated.resources.settings_buffer_size_hint
 import musicassistantclient.composeapp.generated.resources.settings_buffer_size_value
@@ -88,14 +91,15 @@ import musicassistantclient.composeapp.generated.resources.settings_sendspin_sav
 import musicassistantclient.composeapp.generated.resources.settings_use_tls_ws
 import musicassistantclient.composeapp.generated.resources.settings_use_tls_wss_short
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToInt
 
 data class SendspinPlayerSettings(
     var name: String?,
     var bufferCapacityMb: Int?,
     var codecPreference: AudioCodec?,
-    val connectionOverride: SendspinConnectionSettings
-){
-    companion object{
+    val connectionOverride: SendspinConnectionSettings,
+) {
+    companion object {
         val defaults = SendspinPlayerSettings(
             name = platformDeviceName(),
             bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
@@ -111,13 +115,16 @@ data class SendspinConnectionSettings(
     var host: String? = null,
     var port: Int? = null,
     var path: String? = null,
-){
-    companion object{
+) {
+    companion object {
         val defaults = SendspinConnectionSettings()
     }
 }
 
-val LocalSendSpinSettings = compositionLocalOf<Pair<SendspinPlayerSettings, (SendspinPlayerSettings.() -> Unit) -> Unit>> { Pair(SendspinPlayerSettings.defaults) {  } }
+val LocalSendSpinSettings =
+    compositionLocalOf<Pair<SendspinPlayerSettings, (SendspinPlayerSettings.() -> Unit) -> Unit>> {
+    Pair(SendspinPlayerSettings.defaults) {  }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,57 +148,75 @@ fun SendspinSettingsManager(
     onBufferCapacityMbChange: (Int) -> Unit = {},
     onHostChange: (String) -> Unit = {},
     onUseTlsChange: (Boolean) -> Unit = {},
-){
+) {
     val savedSettings = SendspinPlayerSettings(
         name = deviceName,
         bufferCapacityMb = bufferCapacityMb,
         codecPreference = codecPreference,
-        connectionOverride = if (useCustomConnection) SendspinConnectionSettings(
+        connectionOverride = if (useCustomConnection) {
+            SendspinConnectionSettings(
             enabled = useCustomConnection,
             tls = useTls,
             host = host,
             port = port,
             path = path,
-        ) else SendspinConnectionSettings.defaults,
+        )
+        } else {
+            SendspinConnectionSettings.defaults
+        },
     )
 
     // TODO: add debounce for changing settings
 
     val updateSetting = { settings: SendspinPlayerSettings ->
         if (deviceName != settings.name) onDeviceNameChange(settings.name ?: platformDeviceName())
-        if (bufferCapacityMb != settings.bufferCapacityMb) onBufferCapacityMbChange(
-            settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT
+        if (bufferCapacityMb != settings.bufferCapacityMb) {
+            onBufferCapacityMbChange(
+            settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT,
         )
-        if (codecPreference != settings.codecPreference) onCodecPreferenceChange(
-            settings.codecPreference ?: AudioCodec.OPUS
+        }
+        if (codecPreference != settings.codecPreference) {
+            onCodecPreferenceChange(
+            settings.codecPreference ?: AudioCodec.OPUS,
         )
-        if (useCustomConnection != settings.connectionOverride.enabled) onUseCustomConnectionChange(
-            settings.connectionOverride.enabled
+        }
+        if (useCustomConnection != settings.connectionOverride.enabled) {
+            onUseCustomConnectionChange(
+            settings.connectionOverride.enabled,
         )
-        if (useTls != settings.connectionOverride.tls) onUseTlsChange(
-            settings.connectionOverride.tls
+        }
+        if (useTls != settings.connectionOverride.tls) {
+            onUseTlsChange(
+            settings.connectionOverride.tls,
         )
-        if (host != settings.connectionOverride.host) onHostChange(
-            settings.connectionOverride.host ?: ""
+        }
+        if (host != settings.connectionOverride.host) {
+            onHostChange(
+            settings.connectionOverride.host ?: "",
         )
-        if (port != settings.connectionOverride.port) onPortChange(
-            settings.connectionOverride.port ?: 8097
+        }
+        if (port != settings.connectionOverride.port) {
+            onPortChange(
+            settings.connectionOverride.port ?: 8097,
         )
-        if (path != settings.connectionOverride.path) onPathChange(
-            settings.connectionOverride.path ?: ""
+        }
+        if (path != settings.connectionOverride.path) {
+            onPathChange(
+            settings.connectionOverride.path ?: "",
         )
+        }
     }
-    var newSettings by remember(savedSettings){
+    var newSettings by remember(savedSettings) {
         mutableStateOf(
             savedSettings.copy(
-                connectionOverride = savedSettings.connectionOverride.copy()
-            )
+                connectionOverride = savedSettings.connectionOverride.copy(),
+            ),
         )
     }
     val commitSettings = { updateSetting(newSettings) }
     var showInterruptionDialog by remember { mutableStateOf<(() -> Unit)?>(null) }
 
-    if(showInterruptionDialog != null) {
+    if (showInterruptionDialog != null) {
         BasicAlertDialog(
             onDismissRequest = {
                 showInterruptionDialog = null
@@ -204,11 +229,11 @@ fun SendspinSettingsManager(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Interrupting Playback",
-                        style = MaterialTheme.typography.headlineSmall
+                        text = stringResource(Res.string.dialog_interrupting_playback),
+                        style = MaterialTheme.typography.headlineSmall,
                     )
                     Text(
-                        text = "Saving changes to the player will interrupt the current playback and clear the current queue. Are you sure?"
+                        text = stringResource(Res.string.dialog_interrupting_playback_message),
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
@@ -220,7 +245,7 @@ fun SendspinSettingsManager(
                             },
 
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(Res.string.button_cancel))
                         }
                         TextButton(
                             onClick = {
@@ -228,7 +253,7 @@ fun SendspinSettingsManager(
                                 showInterruptionDialog = null
                             },
                         ) {
-                            Text("Confirm")
+                            Text(stringResource(Res.string.button_confirm))
                         }
                     }
                 }
@@ -240,21 +265,21 @@ fun SendspinSettingsManager(
         LocalSendSpinSettings provides Pair(newSettings) { updateFunction ->
             newSettings = newSettings
                 .copy(
-                    connectionOverride = newSettings.connectionOverride.copy()
+                    connectionOverride = newSettings.connectionOverride.copy(),
                 )
                 .apply(updateFunction)
-            if(!enabled){
+            if (!enabled) {
                 commitSettings()
             }
-        }
+        },
     ) {
         SendspinSection(
             enabled = enabled,
             setEnabled = {
-                if(it) commitSettings()
+                if (it) commitSettings()
                 onEnabledChange(it)
             },
-        ){
+        ) {
             ActionButtonsSection(
                 isResettable = newSettings != SendspinPlayerSettings.defaults,
                 onResetToDefaults = {
@@ -265,13 +290,11 @@ fun SendspinSettingsManager(
                     showInterruptionDialog = {
                         commitSettings()
                     }
-                }
+                },
             )
         }
     }
-
 }
-
 
 @Composable
 fun SendspinSection(
@@ -311,7 +334,7 @@ fun SendspinSection(
             CodecPreferenceSection()
             AdvancedConfigToggleSection(
                 showAdvancedConfig = showAdvancedConfig,
-                toggleShowAdvancedConfig = { showAdvancedConfig = !showAdvancedConfig }
+                toggleShowAdvancedConfig = { showAdvancedConfig = !showAdvancedConfig },
             )
             AnimatedVisibility(visible = showAdvancedConfig) {
                 AdvancedConfigSection()
@@ -320,7 +343,6 @@ fun SendspinSection(
         }
     }
 }
-
 
 @Composable
 private fun DeviceNameSection() {
@@ -384,7 +406,7 @@ private fun CodecPreferenceSection() {
             }
         }
         Text(
-            text = (settings.codecPreference?: AudioCodec.OPUS)
+            text = (settings.codecPreference ?: AudioCodec.OPUS)
                 .localizedTitle()
                 .substringAfter(" ")
                 .replace("(", "")
@@ -398,7 +420,7 @@ private fun CodecPreferenceSection() {
 @Composable
 private fun AdvancedConfigToggleSection(
     showAdvancedConfig: Boolean = false,
-    toggleShowAdvancedConfig: () -> Unit = {  }
+    toggleShowAdvancedConfig: () -> Unit = {  },
 ) {
     ListItem(
         headlineContent = { Text(stringResource(Res.string.settings_sendspin_advanced_title)) },
@@ -434,7 +456,7 @@ private fun ActionButtonsSection(
             modifier = Modifier.weight(1f),
             onClick = onResetToDefaults,
             contentPadding = PaddingValues(0.dp),
-            enabled = isResettable
+            enabled = isResettable,
         ) {
             Icon(
                 imageVector = Icons.Default.Refresh,
@@ -447,7 +469,7 @@ private fun ActionButtonsSection(
             modifier = Modifier.weight(1f),
             onClick = onSaveChanges,
             enabled = isSavable,
-            contentPadding = PaddingValues(0.dp)
+            contentPadding = PaddingValues(0.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Check,
@@ -490,7 +512,7 @@ private fun CustomConnectionSection() {
             Checkbox(
                 checked = settings.connectionOverride.enabled,
                 onCheckedChange = {
-                    updateSettings{
+                    updateSettings {
                        connectionOverride.enabled = it
                     }
                 },
@@ -504,7 +526,7 @@ private fun CustomConnectionSection() {
                     count = 2,
                 ),
                 onClick = {
-                    updateSettings{
+                    updateSettings {
                         connectionOverride.tls = false
                     }
                 },
@@ -518,7 +540,7 @@ private fun CustomConnectionSection() {
                     count = 2,
                 ),
                 onClick = {
-                    updateSettings{
+                    updateSettings {
                         connectionOverride.tls = true
                     }
                 },
@@ -654,7 +676,10 @@ private fun BufferSizeSection() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = stringResource(Res.string.settings_buffer_size_value, settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT),
+                text = stringResource(
+                    Res.string.settings_buffer_size_value,
+                    settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT,
+                ),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )

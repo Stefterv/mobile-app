@@ -391,4 +391,8 @@
   <string name="toast_marked_played">Marked as played</string>
   <string name="toast_marked_unplayed">Marked as unplayed</string>
   <string name="toast_no_uri">Media item has no URI</string>
+  <string name="dialog_interrupting_playback">Interrupting Playback</string>
+  <string name="dialog_interrupting_playback_message">Saving changes to the player will interrupt the current playback and clear the current queue. Are you sure?</string>
+  <string name="button_cancel">Cancel</string>
+  <string name="button_confirm">Confirm</string>
 </resources>
