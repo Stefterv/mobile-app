@@ -351,6 +351,8 @@
   <string name="settings_sendspin_require_encryption">Require encrypted connection</string>
   <string name="settings_sendspin_advanced_title">Advanced Configuration</string>
   <string name="settings_sendspin_advanced_summary">50 MB buffer, custom connection, and more</string>
+  <string name="settings_sendspin_reset_defaults">Reset to defaults</string>
+  <string name="settings_sendspin_save_changes">Save changes</string>
   <string name="settings_server">Server</string>
   <string name="settings_server_base_path">Base path (optional)</string>
   <string name="settings_server_base_path_hint">If you serve the server under a sub-path.</string>

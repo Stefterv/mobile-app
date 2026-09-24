@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,16 +13,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowCircleLeft
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Redo
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -68,6 +77,8 @@ import musicassistantclient.composeapp.generated.resources.settings_port_default
 import musicassistantclient.composeapp.generated.resources.settings_port_placeholder
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_advanced_summary
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_advanced_title
+import musicassistantclient.composeapp.generated.resources.settings_sendspin_reset_defaults
+import musicassistantclient.composeapp.generated.resources.settings_sendspin_save_changes
 import musicassistantclient.composeapp.generated.resources.settings_use_tls_ws
 import musicassistantclient.composeapp.generated.resources.settings_use_tls_wss_short
 import org.jetbrains.compose.resources.stringResource
@@ -93,6 +104,8 @@ fun SendspinSection(
     onBufferCapacityMbChange: (Int) -> Unit = {},
     onHostChange: (String) -> Unit = {},
     onUseTlsChange: (Boolean) -> Unit = {},
+    onResetToDefaults: () -> Unit = {},
+    onSaveChanges: () -> Unit = {},
 ) {
     val focusManager = LocalFocusManager.current
     // TODO: Show expanded advanced config if any of the advanced config is set to non-default value
@@ -141,6 +154,10 @@ fun SendspinSection(
                     onBufferCapacityMbChange = onBufferCapacityMbChange,
                 )
             }
+            ActionButtonsSection(
+                onResetToDefaults = onResetToDefaults,
+                onSaveChanges = onSaveChanges,
+            )
         }
     }
 }
@@ -257,6 +274,45 @@ private fun AdvancedConfigToggleSection(
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
         ),
     )
+}
+
+@Composable
+private fun ActionButtonsSection(
+    onResetToDefaults: () -> Unit,
+    onSaveChanges: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        OutlinedButton(
+            modifier = Modifier.weight(1f),
+            onClick = onResetToDefaults,
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = stringResource(Res.string.settings_sendspin_reset_defaults),
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(stringResource(Res.string.settings_sendspin_reset_defaults))
+        }
+        FilledTonalButton(
+            modifier = Modifier.weight(1f),
+            onClick = onSaveChanges,
+            enabled = false, // TODO: Enable when changes are detected
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = stringResource(Res.string.settings_sendspin_save_changes),
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(stringResource(Res.string.settings_sendspin_save_changes))
+        }
+    }
 }
 
 @Composable
