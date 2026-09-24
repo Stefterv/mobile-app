@@ -56,31 +56,31 @@ import kotlin.math.roundToInt
 @Composable
 fun SendspinSection(
     modifier: Modifier = Modifier,
-    sendspinEnabled: Boolean = false,
-    sendspinDeviceName: String = "",
-    sendspinUseCustomConnection: Boolean = false,
-    sendspinPort: Int = 8097,
-    sendspinPath: String = "",
-    sendspinCodecPreference: AudioCodec = AudioCodec.OPUS,
-    sendspinBufferCapacityMb: Int = SettingsRepository.BUFFER_MB_DEFAULT,
-    sendspinHost: String = "",
-    sendspinUseTls: Boolean = false,
-    onSendspinEnabledChange: (Boolean) -> Unit = {},
-    onSendspinDeviceNameChange: (String) -> Unit = {},
-    onSendspinUseCustomConnectionChange: (Boolean) -> Unit = {},
-    onSendspinPortChange: (Int) -> Unit = {},
-    onSendspinPathChange: (String) -> Unit = {},
-    onSendspinCodecPreferenceChange: (AudioCodec) -> Unit = {},
-    onSendspinBufferCapacityMbChange: (Int) -> Unit = {},
-    onSendspinHostChange: (String) -> Unit = {},
-    onSendspinUseTlsChange: (Boolean) -> Unit = {},
+    enabled: Boolean = false,
+    deviceName: String = "",
+    useCustomConnection: Boolean = false,
+    port: Int = 8097,
+    path: String = "",
+    codecPreference: AudioCodec = AudioCodec.OPUS,
+    bufferCapacityMb: Int = SettingsRepository.BUFFER_MB_DEFAULT,
+    host: String = "",
+    useTls: Boolean = false,
+    onEnabledChange: (Boolean) -> Unit = {},
+    onDeviceNameChange: (String) -> Unit = {},
+    onUseCustomConnectionChange: (Boolean) -> Unit = {},
+    onPortChange: (Int) -> Unit = {},
+    onPathChange: (String) -> Unit = {},
+    onCodecPreferenceChange: (AudioCodec) -> Unit = {},
+    onBufferCapacityMbChange: (Int) -> Unit = {},
+    onHostChange: (String) -> Unit = {},
+    onUseTlsChange: (Boolean) -> Unit = {},
 ) {
     val focusManager = LocalFocusManager.current
-    val settingsEditable = !sendspinEnabled
+    val settingsEditable = !enabled
 
     SectionCard(modifier = modifier) {
         SectionTitle(
-            if (sendspinEnabled) {
+            if (enabled) {
                 stringResource(
                     Res.string.settings_local_player_enabled,
                 )
@@ -94,8 +94,8 @@ fun SendspinSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            value = sendspinDeviceName,
-            onValueChange = onSendspinDeviceNameChange,
+            value = deviceName,
+            onValueChange = onDeviceNameChange,
             label = { Text(stringResource(Res.string.settings_player_name)) },
             singleLine = true,
             enabled = settingsEditable,
@@ -113,7 +113,7 @@ fun SendspinSection(
             options = SettingsRepository.CODECS.map { item ->
                 OverflowMenuOption(
                     title = item.localizedTitle(),
-                ) { onSendspinCodecPreferenceChange(item) }
+                ) { onCodecPreferenceChange(item) }
             },
             buttonContent = { onClick ->
                 Row(
@@ -131,9 +131,9 @@ fun SendspinSection(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = sendspinCodecPreference.localizedTitle(),
+                            text = codecPreference.localizedTitle(),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = if (sendspinEnabled) {
+                            color = if (enabled) {
                                 MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                             } else {
                                 MaterialTheme.colorScheme.onBackground
@@ -144,7 +144,7 @@ fun SendspinSection(
                         modifier = Modifier.size(24.dp),
                         imageVector = Icons.Default.ExpandMore,
                         contentDescription = stringResource(Res.string.cd_select_codec),
-                        tint = if (sendspinEnabled) {
+                        tint = if (enabled) {
                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -168,9 +168,9 @@ fun SendspinSection(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "$sendspinBufferCapacityMb MB",
+                    text = "$bufferCapacityMb MB",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (sendspinEnabled) {
+                    color = if (enabled) {
                         MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     } else {
                         MaterialTheme.colorScheme.onBackground
@@ -178,8 +178,8 @@ fun SendspinSection(
                 )
             }
             Slider(
-                value = sendspinBufferCapacityMb.toFloat(),
-                onValueChange = { onSendspinBufferCapacityMbChange(it.roundToInt()) },
+                value = bufferCapacityMb.toFloat(),
+                onValueChange = { onBufferCapacityMbChange(it.roundToInt()) },
                 valueRange = SettingsRepository.BUFFER_MB_MIN.toFloat()..SettingsRepository.BUFFER_MB_MAX.toFloat(),
                 steps = (SettingsRepository.BUFFER_MB_MAX - SettingsRepository.BUFFER_MB_MIN) /
                         SettingsRepository.BUFFER_MB_STEP - 1,
@@ -195,13 +195,13 @@ fun SendspinSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(
-                checked = sendspinUseCustomConnection,
-                onCheckedChange = onSendspinUseCustomConnectionChange,
+                checked = useCustomConnection,
+                onCheckedChange = onUseCustomConnectionChange,
                 enabled = settingsEditable,
             )
             Text(
                 text = stringResource(Res.string.settings_custom_sendspin),
-                color = if (sendspinEnabled) {
+                color = if (enabled) {
                     MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 } else {
                     MaterialTheme.colorScheme.onBackground
@@ -213,13 +213,13 @@ fun SendspinSection(
         // when the server is too old for encrypted Sendspin.
 
         // Connection fields (only shown when using custom connection)
-        if (sendspinUseCustomConnection) {
+        if (useCustomConnection) {
             TextField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
-                value = sendspinHost,
-                onValueChange = onSendspinHostChange,
+                value = host,
+                onValueChange = onHostChange,
                 label = { Text(stringResource(Res.string.settings_host)) },
                 singleLine = true,
                 enabled = settingsEditable,
@@ -242,9 +242,9 @@ fun SendspinSection(
                     modifier = Modifier
                         .weight(1f)
                         .padding(bottom = 12.dp),
-                    value = sendspinPort.toString(),
+                    value = port.toString(),
                     onValueChange = {
-                        it.toIntOrNull()?.let(onSendspinPortChange)
+                        it.toIntOrNull()?.let(onPortChange)
                     },
                     label = { Text(stringResource(Res.string.settings_port_default)) },
                     singleLine = true,
@@ -267,8 +267,8 @@ fun SendspinSection(
                     modifier = Modifier
                         .weight(1f)
                         .padding(bottom = 12.dp),
-                    value = sendspinPath,
-                    onValueChange = onSendspinPathChange,
+                    value = path,
+                    onValueChange = onPathChange,
                     label = { Text(stringResource(Res.string.settings_path)) },
                     singleLine = true,
                     enabled = settingsEditable,
@@ -289,13 +289,13 @@ fun SendspinSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Checkbox(
-                    checked = sendspinUseTls,
-                    onCheckedChange = onSendspinUseTlsChange,
+                    checked = useTls,
+                    onCheckedChange = onUseTlsChange,
                     enabled = settingsEditable,
                 )
                 Text(
                     text = stringResource(Res.string.settings_use_tls_wss),
-                    color = if (sendspinEnabled) {
+                    color = if (enabled) {
                         MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     } else {
                         MaterialTheme.colorScheme.onBackground
@@ -305,17 +305,17 @@ fun SendspinSection(
         }
 
         // Toggle button on the bottom
-        if (sendspinEnabled) {
+        if (enabled) {
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { onSendspinEnabledChange(false) },
+                onClick = { onEnabledChange(false) },
             ) {
                 Text(stringResource(Res.string.settings_disable_local_player))
             }
         } else {
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { onSendspinEnabledChange(true) },
+                onClick = { onEnabledChange(true) },
             ) {
                 Text(stringResource(Res.string.settings_enable_local_player))
             }

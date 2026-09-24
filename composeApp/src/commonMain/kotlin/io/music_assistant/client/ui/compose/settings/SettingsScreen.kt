@@ -349,35 +349,26 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                             is DataConnectionState.Authenticated -> {
                                 // State 4: Connected and authenticated
 
-                                val sendspinDeviceName by viewModel.sendspinDeviceName.collectAsStateWithLifecycle()
-                                val sendspinUseCustomConnection by viewModel.sendspinUseCustomConnection.collectAsStateWithLifecycle()
-                                val sendspinPort by viewModel.sendspinPort.collectAsStateWithLifecycle()
-                                val sendspinPath by viewModel.sendspinPath.collectAsStateWithLifecycle()
-                                val sendspinCodecPreference by viewModel.sendspinCodecPreference.collectAsStateWithLifecycle()
-                                val sendspinBufferCapacityMb by viewModel.sendspinBufferCapacityMb.collectAsStateWithLifecycle()
-                                val sendspinHost by viewModel.sendspinHost.collectAsStateWithLifecycle()
-                                val sendspinUseTls by viewModel.sendspinUseTls.collectAsStateWithLifecycle()
-
                                 // Local Player Section
                                 SendspinSection(
-                                    sendspinEnabled = sendspinEnabled,
-                                    sendspinDeviceName = sendspinDeviceName,
-                                    sendspinUseCustomConnection = sendspinUseCustomConnection,
-                                    sendspinPort = sendspinPort,
-                                    sendspinPath = sendspinPath,
-                                    sendspinCodecPreference = sendspinCodecPreference,
-                                    sendspinBufferCapacityMb = sendspinBufferCapacityMb,
-                                    sendspinHost = sendspinHost,
-                                    sendspinUseTls = sendspinUseTls,
-                                    onSendspinEnabledChange = viewModel::setSendspinEnabled,
-                                    onSendspinDeviceNameChange = viewModel::setSendspinDeviceName,
-                                    onSendspinUseCustomConnectionChange = viewModel::setSendspinUseCustomConnection,
-                                    onSendspinPortChange = viewModel::setSendspinPort,
-                                    onSendspinPathChange = viewModel::setSendspinPath,
-                                    onSendspinCodecPreferenceChange = viewModel::setSendspinCodecPreference,
-                                    onSendspinBufferCapacityMbChange = viewModel::setSendspinBufferCapacityMb,
-                                    onSendspinHostChange = viewModel::setSendspinHost,
-                                    onSendspinUseTlsChange = viewModel::setSendspinUseTls,
+                                    enabled = sendspinEnabled,
+                                    deviceName = viewModel.sendspinDeviceName.collectAsStateWithLifecycle().value,
+                                    useCustomConnection = viewModel.sendspinUseCustomConnection.collectAsStateWithLifecycle().value,
+                                    port = viewModel.sendspinPort.collectAsStateWithLifecycle().value,
+                                    path = viewModel.sendspinPath.collectAsStateWithLifecycle().value,
+                                    codecPreference = viewModel.sendspinCodecPreference.collectAsStateWithLifecycle().value,
+                                    bufferCapacityMb = viewModel.sendspinBufferCapacityMb.collectAsStateWithLifecycle().value,
+                                    host = viewModel.sendspinHost.collectAsStateWithLifecycle().value,
+                                    useTls = viewModel.sendspinUseTls.collectAsStateWithLifecycle().value,
+                                    onEnabledChange = viewModel::setSendspinEnabled,
+                                    onDeviceNameChange = viewModel::setSendspinDeviceName,
+                                    onUseCustomConnectionChange = viewModel::setSendspinUseCustomConnection,
+                                    onPortChange = viewModel::setSendspinPort,
+                                    onPathChange = viewModel::setSendspinPath,
+                                    onCodecPreferenceChange = viewModel::setSendspinCodecPreference,
+                                    onBufferCapacityMbChange = viewModel::setSendspinBufferCapacityMb,
+                                    onHostChange = viewModel::setSendspinHost,
+                                    onUseTlsChange = viewModel::setSendspinUseTls,
                                 )
 
                                 // Car options route to the local player — only meaningful when
