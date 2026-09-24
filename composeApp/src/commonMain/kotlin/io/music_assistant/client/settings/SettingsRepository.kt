@@ -167,7 +167,7 @@ class SettingsRepository(
     val deviceName = MutableStateFlow(
         settings.getStringOrNull("deviceName")
             ?: run {
-                val name = platformDeviceName().ifBlank { "KMP app ${Uuid.random()}" }
+                val name = "KMP app ${Uuid.random()}"
                 settings.putString("deviceName", name)
                 name
             },
