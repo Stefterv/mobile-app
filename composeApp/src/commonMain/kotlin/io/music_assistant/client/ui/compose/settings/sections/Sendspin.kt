@@ -448,7 +448,7 @@ private fun ConnectionFieldsSection(
         OutlinedTextField(
             modifier = Modifier
                 .onFocusChanged { isHostFocused = it.isFocused }
-                .weight(if (isHostFocused) 2f else 1f)
+                .weight(if (isPortFocused || isPathFocused) 1f else 2f)
                 .padding(bottom = 12.dp),
             value = host,
             onValueChange = onHostChange,
