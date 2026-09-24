@@ -350,26 +350,7 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                                 // State 4: Connected and authenticated
 
                                 // Local Player Section
-                                SendspinSettingsManager(
-                                    enabled = sendspinEnabled,
-                                    deviceName = viewModel.sendspinDeviceName.collectAsStateWithLifecycle().value,
-                                    useCustomConnection = viewModel.sendspinUseCustomConnection.collectAsStateWithLifecycle().value,
-                                    port = viewModel.sendspinPort.collectAsStateWithLifecycle().value,
-                                    path = viewModel.sendspinPath.collectAsStateWithLifecycle().value,
-                                    codecPreference = viewModel.sendspinCodecPreference.collectAsStateWithLifecycle().value,
-                                    bufferCapacityMb = viewModel.sendspinBufferCapacityMb.collectAsStateWithLifecycle().value,
-                                    host = viewModel.sendspinHost.collectAsStateWithLifecycle().value,
-                                    useTls = viewModel.sendspinUseTls.collectAsStateWithLifecycle().value,
-                                    onEnabledChange = viewModel::setSendspinEnabled,
-                                    onDeviceNameChange = viewModel::setSendspinDeviceName,
-                                    onUseCustomConnectionChange = viewModel::setSendspinUseCustomConnection,
-                                    onPortChange = viewModel::setSendspinPort,
-                                    onPathChange = viewModel::setSendspinPath,
-                                    onCodecPreferenceChange = viewModel::setSendspinCodecPreference,
-                                    onBufferCapacityMbChange = viewModel::setSendspinBufferCapacityMb,
-                                    onHostChange = viewModel::setSendspinHost,
-                                    onUseTlsChange = viewModel::setSendspinUseTls,
-                                )
+                                SendspinSettingsManager(viewModel)
 
                                 // Car options route to the local player — only meaningful when
                                 // it's reachable (authenticated) and enabled.
