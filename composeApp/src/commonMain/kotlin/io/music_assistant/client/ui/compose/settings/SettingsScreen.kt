@@ -75,6 +75,7 @@ import io.music_assistant.client.ui.compose.common.toDisplayString
 import io.music_assistant.client.ui.compose.nav.BackHandler
 import io.music_assistant.client.ui.compose.nav.TopBarLayout
 import io.music_assistant.client.ui.compose.settings.sections.SendspinSection
+import io.music_assistant.client.ui.compose.settings.sections.SenspingSettingsManager
 import io.music_assistant.client.ui.theme.ThemeSetting
 import io.music_assistant.client.ui.theme.ThemeViewModel
 import io.music_assistant.client.utils.DataConnectionState
@@ -350,7 +351,7 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                                 // State 4: Connected and authenticated
 
                                 // Local Player Section
-                                SendspinSection(
+                                SenspingSettingsManager(
                                     enabled = sendspinEnabled,
                                     deviceName = viewModel.sendspinDeviceName.collectAsStateWithLifecycle().value,
                                     useCustomConnection = viewModel.sendspinUseCustomConnection.collectAsStateWithLifecycle().value,

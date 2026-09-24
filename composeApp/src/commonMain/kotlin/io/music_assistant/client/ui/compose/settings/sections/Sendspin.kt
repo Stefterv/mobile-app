@@ -13,17 +13,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowCircleLeft
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Redo
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -39,6 +35,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -83,18 +82,50 @@ import musicassistantclient.composeapp.generated.resources.settings_use_tls_ws
 import musicassistantclient.composeapp.generated.resources.settings_use_tls_wss_short
 import org.jetbrains.compose.resources.stringResource
 
+data class SendspinPlayerSettings(
+    var enabled: Boolean,
+    var name: String?,
+    var bufferCapacityMb: Int?,
+    var codecPreference: AudioCodec?,
+    val connectionOverride: SendspinConnectionSettings
+){
+    companion object{
+        val defaults = SendspinPlayerSettings(
+            enabled = false,
+            name = platformDeviceName(),
+            bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
+            codecPreference = AudioCodec.OPUS,
+            connectionOverride = SendspinConnectionSettings(),
+        )
+    }
+}
+
+data class SendspinConnectionSettings(
+    var enabled: Boolean = false,
+    var tls: Boolean = false,
+    var host: String? = null,
+    var port: Int? = null,
+    var path: String? = null,
+){
+    companion object{
+        val defaults = SendspinConnectionSettings()
+    }
+}
+
+val LocalSendSpinSettings = compositionLocalOf<Pair<SendspinPlayerSettings, (SendspinPlayerSettings.() -> Unit) -> Unit>> { Pair(SendspinPlayerSettings.defaults) {  } }
+
 @Composable
-fun SendspinSection(
-    modifier: Modifier = Modifier,
-    enabled: Boolean = false,
-    deviceName: String = "",
-    useCustomConnection: Boolean = false,
-    port: Int = 8097,
-    path: String = "",
-    codecPreference: AudioCodec = AudioCodec.OPUS,
-    bufferCapacityMb: Int = SettingsRepository.BUFFER_MB_DEFAULT,
-    host: String = "",
-    useTls: Boolean = false,
+fun SenspingSettingsManager(
+    enabled: Boolean,
+    deviceName: String,
+    useCustomConnection: Boolean,
+    port: Int,
+    path: String,
+    codecPreference: AudioCodec,
+    bufferCapacityMb: Int,
+    host: String,
+    useTls: Boolean,
+
     onEnabledChange: (Boolean) -> Unit = {},
     onDeviceNameChange: (String) -> Unit = {},
     onUseCustomConnectionChange: (Boolean) -> Unit = {},
@@ -104,18 +135,73 @@ fun SendspinSection(
     onBufferCapacityMbChange: (Int) -> Unit = {},
     onHostChange: (String) -> Unit = {},
     onUseTlsChange: (Boolean) -> Unit = {},
-    onResetToDefaults: () -> Unit = {},
-    onSaveChanges: () -> Unit = {},
+){
+    val savedSettings = SendspinPlayerSettings(
+        enabled = enabled,
+        name = deviceName,
+        bufferCapacityMb = bufferCapacityMb,
+        codecPreference = codecPreference,
+        connectionOverride = if (useCustomConnection) SendspinConnectionSettings(
+            enabled = useCustomConnection,
+            tls = useTls,
+            host = host,
+            port = port,
+            path = path,
+        ) else SendspinConnectionSettings.defaults,
+    )
+    val updateSetting = { settings: SendspinPlayerSettings ->
+        if (enabled != settings.enabled) onEnabledChange(settings.enabled)
+        if (deviceName != settings.name) onDeviceNameChange(settings.name ?: platformDeviceName())
+        if (bufferCapacityMb != settings.bufferCapacityMb) onBufferCapacityMbChange(
+            settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT
+        )
+        if (codecPreference != settings.codecPreference) onCodecPreferenceChange(
+            settings.codecPreference ?: AudioCodec.OPUS
+        )
+        if (useCustomConnection != settings.connectionOverride.enabled) onUseCustomConnectionChange(
+            settings.connectionOverride.enabled ?: false
+        )
+        if (useTls != settings.connectionOverride.tls) onUseTlsChange(
+            settings.connectionOverride.tls ?: false
+        )
+        if (host != settings.connectionOverride.host) onHostChange(
+            settings.connectionOverride.host ?: ""
+        )
+        if (port != settings.connectionOverride.port) onPortChange(
+            settings.connectionOverride.port ?: 8097
+        )
+        if (path != settings.connectionOverride.path) onPathChange(
+            settings.connectionOverride.path ?: ""
+        )
+    }
+
+    CompositionLocalProvider(
+        LocalSendSpinSettings provides Pair(savedSettings) { updateFunction ->
+            val newSettings = savedSettings
+                .copy(
+                    connectionOverride = savedSettings.connectionOverride.copy()
+                )
+                .apply(updateFunction)
+            updateSetting(newSettings)
+        }
+    ) {
+        Text(savedSettings.toString())
+        SendspinSection()
+    }
+
+}
+
+
+@Composable
+fun SendspinSection(
+    modifier: Modifier = Modifier,
 ) {
-    val focusManager = LocalFocusManager.current
     // TODO: Show expanded advanced config if any of the advanced config is set to non-default value
-    var showAdvancedConfig by remember { mutableStateOf(false) }
+    val (settings, _) = LocalSendSpinSettings.current
+    var showAdvancedConfig by remember { mutableStateOf(settings.bufferCapacityMb != null || settings.connectionOverride.enabled) }
 
     Column {
-        SendspinHeader(
-            enabled = enabled,
-            onEnabledChange = onEnabledChange,
-        )
+        SendspinHeader()
         Card(
             modifier = modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -123,50 +209,22 @@ fun SendspinSection(
             ),
             shape = RoundedCornerShape(12.dp),
         ) {
-            DeviceNameSection(
-                deviceName = deviceName,
-                focusManager = focusManager,
-                onDeviceNameChange = onDeviceNameChange,
-            )
-            CodecPreferenceSection(
-                codecPreference = codecPreference,
-                onCodecPreferenceChange = onCodecPreferenceChange,
-            )
+            DeviceNameSection()
+            CodecPreferenceSection()
             AdvancedConfigToggleSection(
                 showAdvancedConfig = showAdvancedConfig,
-                onToggle = { showAdvancedConfig = !showAdvancedConfig },
+                toggleShowAdvancedConfig = { showAdvancedConfig = !showAdvancedConfig }
             )
             AnimatedVisibility(visible = showAdvancedConfig) {
-                AdvancedConfigSection(
-                    enabled = enabled,
-                    useCustomConnection = useCustomConnection,
-                    useTls = useTls,
-                    host = host,
-                    port = port,
-                    path = path,
-                    bufferCapacityMb = bufferCapacityMb,
-                    focusManager = focusManager,
-                    onUseCustomConnectionChange = onUseCustomConnectionChange,
-                    onUseTlsChange = onUseTlsChange,
-                    onHostChange = onHostChange,
-                    onPortChange = onPortChange,
-                    onPathChange = onPathChange,
-                    onBufferCapacityMbChange = onBufferCapacityMbChange,
-                )
+                AdvancedConfigSection()
             }
-            ActionButtonsSection(
-                onResetToDefaults = onResetToDefaults,
-                onSaveChanges = onSaveChanges,
-            )
         }
     }
 }
 
 @Composable
-private fun SendspinHeader(
-    enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit,
-) {
+private fun SendspinHeader() {
+    val (settings, updateSettings) = LocalSendSpinSettings.current
     Row(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -179,34 +237,42 @@ private fun SendspinHeader(
             style = MaterialTheme.typography.titleLargeEmphasized,
         )
         Switch(
-            checked = enabled,
-            onCheckedChange = onEnabledChange,
+            checked = settings.enabled,
+            onCheckedChange = { enabled ->
+                updateSettings {
+                    this.enabled = enabled
+                }
+            },
         )
     }
 }
 
 @Composable
-private fun DeviceNameSection(
-    deviceName: String,
-    focusManager: FocusManager,
-    onDeviceNameChange: (String) -> Unit,
-) {
+private fun DeviceNameSection() {
+    val focusManager = LocalFocusManager.current
+    val (settings, updateSettings) = LocalSendSpinSettings.current
+    val platformDeviceName = remember { platformDeviceName() }
+
     OutlinedTextField(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        value = deviceName,
-        onValueChange = onDeviceNameChange,
+        value = settings.name ?: platformDeviceName,
+        onValueChange = { name ->
+            updateSettings {
+                this.name = name
+            }
+        },
         label = { Text(stringResource(Res.string.settings_player_name)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         trailingIcon = {
-            if (deviceName != platformDeviceName()) {
+            if (settings.name != platformDeviceName) {
                 Icon(
                     imageVector = Icons.Default.Clear,
                     contentDescription = stringResource(Res.string.settings_local_player_clear_name),
-                    modifier = Modifier.clickable { onDeviceNameChange(platformDeviceName()) },
+                    modifier = Modifier.clickable { updateSettings { this.name = platformDeviceName } },
                 )
             }
         },
@@ -214,10 +280,7 @@ private fun DeviceNameSection(
 }
 
 @Composable
-private fun CodecPreferenceSection(
-    codecPreference: AudioCodec,
-    onCodecPreferenceChange: (AudioCodec) -> Unit,
-) {
+private fun CodecPreferenceSection() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -230,6 +293,8 @@ private fun CodecPreferenceSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
         )
+        val (settings, updateSettings) = LocalSendSpinSettings.current
+
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SettingsRepository.CODECS.forEachIndexed { index, codec ->
                 SegmentedButton(
@@ -237,14 +302,15 @@ private fun CodecPreferenceSection(
                         index = index,
                         count = SettingsRepository.CODECS.size,
                     ),
-                    onClick = { onCodecPreferenceChange(codec) },
-                    selected = codec == codecPreference,
+                    onClick = { updateSettings { this.codecPreference = codec } },
+                    selected = codec == settings.codecPreference,
                     label = { Text(codec.localizedTitle().substringBefore(" ")) },
                 )
             }
         }
         Text(
-            text = codecPreference.localizedTitle()
+            text = (settings.codecPreference?: AudioCodec.OPUS)
+                .localizedTitle()
                 .substringAfter(" ")
                 .replace("(", "")
                 .replace(")", ""),
@@ -256,8 +322,8 @@ private fun CodecPreferenceSection(
 
 @Composable
 private fun AdvancedConfigToggleSection(
-    showAdvancedConfig: Boolean,
-    onToggle: () -> Unit,
+    showAdvancedConfig: Boolean = false,
+    toggleShowAdvancedConfig: () -> Unit = {  }
 ) {
     ListItem(
         headlineContent = { Text(stringResource(Res.string.settings_sendspin_advanced_title)) },
@@ -269,9 +335,9 @@ private fun AdvancedConfigToggleSection(
                 contentDescription = stringResource(Res.string.cd_select_codec),
             )
         },
-        modifier = Modifier.clickable(onClick = onToggle),
+        modifier = Modifier.clickable(onClick = toggleShowAdvancedConfig),
         colors = ListItemDefaults.colors(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            containerColor = Color.Transparent,
         ),
     )
 }
@@ -316,63 +382,22 @@ private fun ActionButtonsSection(
 }
 
 @Composable
-private fun AdvancedConfigSection(
-    enabled: Boolean,
-    useCustomConnection: Boolean,
-    useTls: Boolean,
-    host: String,
-    port: Int,
-    path: String,
-    bufferCapacityMb: Int,
-    focusManager: FocusManager,
-    onUseCustomConnectionChange: (Boolean) -> Unit,
-    onUseTlsChange: (Boolean) -> Unit,
-    onHostChange: (String) -> Unit,
-    onPortChange: (Int) -> Unit,
-    onPathChange: (String) -> Unit,
-    onBufferCapacityMbChange: (Int) -> Unit,
-) {
+private fun AdvancedConfigSection() {
     Column(
         verticalArrangement = Arrangement.spacedBy(20.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
     ) {
-        CustomConnectionSection(
-            useCustomConnection = useCustomConnection,
-            useTls = useTls,
-            host = host,
-            port = port,
-            path = path,
-            focusManager = focusManager,
-            onUseCustomConnectionChange = onUseCustomConnectionChange,
-            onUseTlsChange = onUseTlsChange,
-            onHostChange = onHostChange,
-            onPortChange = onPortChange,
-            onPathChange = onPathChange,
-        )
-        BufferSizeSection(
-            enabled = enabled,
-            bufferCapacityMb = bufferCapacityMb,
-            onBufferCapacityMbChange = onBufferCapacityMbChange,
-        )
+        CustomConnectionSection()
+        BufferSizeSection()
     }
 }
 
 @Composable
-private fun CustomConnectionSection(
-    useCustomConnection: Boolean,
-    useTls: Boolean,
-    host: String,
-    port: Int,
-    path: String,
-    focusManager: FocusManager,
-    onUseCustomConnectionChange: (Boolean) -> Unit,
-    onUseTlsChange: (Boolean) -> Unit,
-    onHostChange: (String) -> Unit,
-    onPortChange: (Int) -> Unit,
-    onPathChange: (String) -> Unit,
-) {
+private fun CustomConnectionSection() {
+    val (settings, updateSettings) = LocalSendSpinSettings.current
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -385,8 +410,12 @@ private fun CustomConnectionSection(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Checkbox(
-                checked = useCustomConnection,
-                onCheckedChange = onUseCustomConnectionChange,
+                checked = settings.connectionOverride.enabled,
+                onCheckedChange = {
+                    updateSettings{
+                       connectionOverride.enabled = it
+                    }
+                },
             )
         }
 
@@ -396,47 +425,40 @@ private fun CustomConnectionSection(
                     index = 0,
                     count = 2,
                 ),
-                onClick = { onUseTlsChange(false) },
-                selected = !useTls,
-                enabled = useCustomConnection,
-            label = { Text(stringResource(Res.string.settings_use_tls_ws)) },
+                onClick = {
+                    updateSettings{
+                        connectionOverride.tls = false
+                    }
+                },
+                selected = !settings.connectionOverride.tls,
+                enabled = settings.connectionOverride.enabled,
+                label = { Text(stringResource(Res.string.settings_use_tls_ws)) },
             )
             SegmentedButton(
                 shape = SegmentedButtonDefaults.itemShape(
                     index = 1,
                     count = 2,
                 ),
-                onClick = { onUseTlsChange(true) },
-                selected = useTls,
-                enabled = useCustomConnection,
+                onClick = {
+                    updateSettings{
+                        connectionOverride.tls = true
+                    }
+                },
+                selected = settings.connectionOverride.tls,
+                enabled = settings.connectionOverride.enabled,
             label = { Text(stringResource(Res.string.settings_use_tls_wss_short)) },
             )
         }
 
-        ConnectionFieldsSection(
-            useCustomConnection = useCustomConnection,
-            host = host,
-            port = port,
-            path = path,
-            focusManager = focusManager,
-            onHostChange = onHostChange,
-            onPortChange = onPortChange,
-            onPathChange = onPathChange,
-        )
+        ConnectionFieldsSection()
     }
 }
 
 @Composable
-private fun ConnectionFieldsSection(
-    useCustomConnection: Boolean,
-    host: String,
-    port: Int,
-    path: String,
-    focusManager: FocusManager,
-    onHostChange: (String) -> Unit,
-    onPortChange: (Int) -> Unit,
-    onPathChange: (String) -> Unit,
-) {
+private fun ConnectionFieldsSection() {
+    val (settings, updateSettings) = LocalSendSpinSettings.current
+    val focusManager = LocalFocusManager.current
+
     var isHostFocused by remember { mutableStateOf(false) }
     var isPortFocused by remember { mutableStateOf(false) }
     var isPathFocused by remember { mutableStateOf(false) }
@@ -450,8 +472,8 @@ private fun ConnectionFieldsSection(
                 .onFocusChanged { isHostFocused = it.isFocused }
                 .weight(if (isPortFocused || isPathFocused) 1f else 2f)
                 .padding(bottom = 12.dp),
-            value = host,
-            onValueChange = onHostChange,
+            value = settings.connectionOverride.host ?: "",
+            onValueChange = { host -> updateSettings { connectionOverride.host = host } },
             label = {
                 Text(
                     text = stringResource(Res.string.settings_host),
@@ -473,15 +495,15 @@ private fun ConnectionFieldsSection(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) },
             ),
-            enabled = useCustomConnection,
+            enabled = settings.connectionOverride.enabled,
         )
         OutlinedTextField(
             modifier = Modifier
                 .onFocusChanged { isPortFocused = it.isFocused }
                 .weight(if (isPortFocused) 2f else 1f)
                 .padding(bottom = 12.dp),
-            value = port.toString(),
-            onValueChange = { it.toIntOrNull()?.let(onPortChange) },
+            value = settings.connectionOverride.port?.toString() ?: "",
+            onValueChange = { it.toIntOrNull()?.let { port -> updateSettings { connectionOverride.port = port } } },
             label = {
                 Text(
                     text = stringResource(Res.string.settings_port_default),
@@ -506,15 +528,15 @@ private fun ConnectionFieldsSection(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Next) },
             ),
-            enabled = useCustomConnection,
+            enabled = settings.connectionOverride.enabled,
         )
         OutlinedTextField(
             modifier = Modifier
                 .onFocusChanged { isPathFocused = it.isFocused }
                 .weight(if (isPathFocused) 2f else 1f)
                 .padding(bottom = 12.dp),
-            value = path,
-            onValueChange = onPathChange,
+            value = settings.connectionOverride.path ?: "",
+            onValueChange = { path -> updateSettings { connectionOverride.path = path } },
             placeholder = {
                 Text(
                     text = stringResource(Res.string.settings_path_placeholder),
@@ -534,18 +556,15 @@ private fun ConnectionFieldsSection(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            enabled = useCustomConnection,
+            enabled = settings.connectionOverride.enabled,
         )
     }
 }
 
 @Composable
-private fun BufferSizeSection(
-    enabled: Boolean,
-    bufferCapacityMb: Int,
-    onBufferCapacityMbChange: (Int) -> Unit,
-) {
+private fun BufferSizeSection() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val (settings, updateSettings) = LocalSendSpinSettings.current
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -557,18 +576,14 @@ private fun BufferSizeSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = stringResource(Res.string.settings_buffer_size_value, bufferCapacityMb),
+                text = stringResource(Res.string.settings_buffer_size_value, settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT),
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (enabled) {
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                } else {
-                    MaterialTheme.colorScheme.onBackground
-                },
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
         Slider(
-            value = bufferCapacityMb.toFloat(),
-            onValueChange = { onBufferCapacityMbChange(it.roundToInt()) },
+            value = settings.bufferCapacityMb?.toFloat() ?: SettingsRepository.BUFFER_MB_DEFAULT.toFloat(),
+            onValueChange = { updateSettings { bufferCapacityMb = it.roundToInt() } },
             valueRange = SettingsRepository.BUFFER_MB_MIN.toFloat()..SettingsRepository.BUFFER_MB_MAX.toFloat(),
             steps = (SettingsRepository.BUFFER_MB_MAX - SettingsRepository.BUFFER_MB_MIN) /
                 SettingsRepository.BUFFER_MB_STEP - 1,
@@ -579,40 +594,4 @@ private fun BufferSizeSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-@Composable
-@Preview
-fun SendspinSectionPreview() {
-    var enabled by remember { mutableStateOf(false) }
-    var deviceName by remember { mutableStateOf("Living Room") }
-    var useCustomConnection by remember { mutableStateOf(false) }
-    var port by remember { mutableStateOf(8097) }
-    var path by remember { mutableStateOf("/music-assistant") }
-    var codecPreference by remember { mutableStateOf(AudioCodec.OPUS) }
-    var bufferCapacityMb by remember { mutableStateOf(SettingsRepository.BUFFER_MB_DEFAULT) }
-    var host by remember { mutableStateOf("192.168.1.42") }
-    var useTls by remember { mutableStateOf(true) }
-
-    SendspinSection(
-        modifier = Modifier.padding(16.dp),
-        enabled = enabled,
-        deviceName = deviceName,
-        useCustomConnection = useCustomConnection,
-        port = port,
-        path = path,
-        codecPreference = codecPreference,
-        bufferCapacityMb = bufferCapacityMb,
-        host = host,
-        useTls = useTls,
-        onEnabledChange = { enabled = it },
-        onDeviceNameChange = { deviceName = it },
-        onUseCustomConnectionChange = { useCustomConnection = it },
-        onPortChange = { port = it },
-        onPathChange = { path = it },
-        onCodecPreferenceChange = { codecPreference = it },
-        onBufferCapacityMbChange = { bufferCapacityMb = it },
-        onHostChange = { host = it },
-        onUseTlsChange = { useTls = it },
-    )
 }
