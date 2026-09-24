@@ -21,6 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -327,7 +331,35 @@ fun SendspinSection(
 @Composable
 @Preview
 fun SendspinSectionPreview() {
+    var enabled by remember { mutableStateOf(false) }
+    var deviceName by remember { mutableStateOf("Living Room") }
+    var useCustomConnection by remember { mutableStateOf(false) }
+    var port by remember { mutableStateOf(8097) }
+    var path by remember { mutableStateOf("/music-assistant") }
+    var codecPreference by remember { mutableStateOf(AudioCodec.OPUS) }
+    var bufferCapacityMb by remember { mutableStateOf(SettingsRepository.BUFFER_MB_DEFAULT) }
+    var host by remember { mutableStateOf("192.168.1.42") }
+    var useTls by remember { mutableStateOf(true) }
+
     SendspinSection(
         modifier = Modifier.padding(16.dp),
+        enabled = enabled,
+        deviceName = deviceName,
+        useCustomConnection = useCustomConnection,
+        port = port,
+        path = path,
+        codecPreference = codecPreference,
+        bufferCapacityMb = bufferCapacityMb,
+        host = host,
+        useTls = useTls,
+        onEnabledChange = { enabled = it },
+        onDeviceNameChange = { deviceName = it },
+        onUseCustomConnectionChange = { useCustomConnection = it },
+        onPortChange = { port = it },
+        onPathChange = { path = it },
+        onCodecPreferenceChange = { codecPreference = it },
+        onBufferCapacityMbChange = { bufferCapacityMb = it },
+        onHostChange = { host = it },
+        onUseTlsChange = { useTls = it },
     )
 }
