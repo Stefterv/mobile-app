@@ -254,13 +254,6 @@ class HomeScreenViewModel(
             return
         }
 
-        if (!mediaItemRepository.supportsRecommendationRowItems()) {
-            setRecommendationRows(
-                folders.map { RecommendationRowState(it, DataState.Data(it.items.orEmpty())) },
-            )
-            return
-        }
-
         // Show every row as a loading placeholder, then fetch each row's items
         // as its own job.
         setRecommendationRows(folders.map { RecommendationRowState(it, DataState.Loading()) })

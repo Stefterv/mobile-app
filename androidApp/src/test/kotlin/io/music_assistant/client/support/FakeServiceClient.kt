@@ -8,7 +8,6 @@ import io.music_assistant.client.api.ServiceClient
 import io.music_assistant.client.data.model.client.MediaType
 import io.music_assistant.client.data.model.server.AudioFormat
 import io.music_assistant.client.data.model.server.AuthProvider
-import io.music_assistant.client.data.model.server.DSPSettings
 import io.music_assistant.client.data.model.server.EventType
 import io.music_assistant.client.data.model.server.PlayerState
 import io.music_assistant.client.data.model.server.SearchResult
@@ -520,23 +519,11 @@ class FakeServiceClient : ServiceClient {
         items: List<ServerQueueItem>,
     ) {
         val queueIndex = queues.indexOfFirst { it.queueId == queueId }
-        val player = findPlayer { it.activeSource == queueId }.second
-
-        val dsp = legacyVersion.let {
-            if (it != null && it <= LegacyVersion.V2_9) {
-                mapOf(player.playerId to DSPSettings(outputFormat = playerAudioFormats[player.playerId]))
-            } else {
-                null
-            }
-        }
 
         val firstItem = items.firstOrNull()
         val currentItem = firstItem?.copy(
             streamDetails = firstItem.streamDetails.let { streamDetails ->
-                streamDetails?.copy(dsp = dsp) ?: StreamDetails(
-                    audioFormat = AudioFormat(),
-                    dsp = dsp,
-                )
+                streamDetails ?: StreamDetails(audioFormat = AudioFormat())
             },
         ) ?: firstItem
 
@@ -897,9 +884,7 @@ class FakeServiceClient : ServiceClient {
         return this.map { mediaItemStore.enrichLibraryItem(it) }
     }
 
-    enum class LegacyVersion {
-        V2_9,
-    }
+    enum class LegacyVersion
 }
 
 private fun answer(request: Request, result: JsonElement): Answer {
