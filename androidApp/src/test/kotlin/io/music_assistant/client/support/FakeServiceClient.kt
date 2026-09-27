@@ -92,21 +92,16 @@ class FakeServiceClient : ServiceClient {
             }
 
             APICommands.AUTH_ME -> {
-                if (legacyVersion == LegacyVersion.V2_8) {
-                    Result.success(
-                        answer(
-                            request = request,
-                            result = emptyMap<String, String>(),
-                        ),
-                    )
-                } else {
-                    Result.success(
-                        answer(
-                            request = request,
-                            result = ServerUser(preferences = ServerUserPreferences(shortcuts)),
-                        ),
-                    )
-                }
+                Result.success(
+                    answer(
+                        request = request,
+                        result = if (shortcuts.isNotEmpty()) {
+                            ServerUser(preferences = ServerUserPreferences(shortcuts))
+                        } else {
+                            ServerUser()
+                        },
+                    ),
+                )
             }
 
             APICommands.AUTH_PROVIDERS -> {
@@ -903,7 +898,6 @@ class FakeServiceClient : ServiceClient {
     }
 
     enum class LegacyVersion {
-        V2_8,
         V2_9,
     }
 }
