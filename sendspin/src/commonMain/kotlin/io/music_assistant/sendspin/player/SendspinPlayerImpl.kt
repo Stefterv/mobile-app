@@ -315,7 +315,8 @@ internal class SendspinPlayerImpl(
     }
 
     private companion object {
-        val SAMPLE_RATES = listOf(44100, 48000, 88200, 96000, 192000)
+        // Order matters: the server treats the first advertised format as preferred.
+        val SAMPLE_RATES = listOf(48000, 44100, 88200, 96000, 192000)
         val BIT_DEPTHS = listOf(16, 24, 32)
         const val STATE_REPORT_MILLIS = 2_000L
         const val CLOCK_UNSTABLE_MICROS = 60_000_000L
