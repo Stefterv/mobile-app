@@ -11,6 +11,7 @@ import coil3.fetch.Fetcher
 import coil3.fetch.SourceFetchResult
 import coil3.intercept.Interceptor
 import coil3.key.Keyer
+import coil3.request.CachePolicy
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.request.Options
@@ -25,17 +26,32 @@ internal fun isOwnedArtworkUrl(raw: String): Boolean =
     raw.substringBefore("://", missingDelimiterValue = "").lowercase() in OWNED_ARTWORK_SCHEMES
 
 internal data class ResolvedArtworkData(
-    val result: ArtworkResult,
+    val url: String,
+    val policy: ArtworkReadPolicy,
+    val resolution: ArtworkResolution,
     val callerMemoryCacheKey: String?,
-)
+) {
+    val keyToken: ArtworkToken
+        get() = resolution.keyToken
+}
+
+internal sealed interface ArtworkResolution {
+    val keyToken: ArtworkToken
+
+    data class Lazy(override val keyToken: ArtworkToken) : ArtworkResolution
+    data class Captured(val result: ArtworkResult) : ArtworkResolution {
+        override val keyToken: ArtworkToken
+            get() = result.token
+    }
+}
 
 internal class ArtworkKeyer : Keyer<ResolvedArtworkData> {
     override fun key(data: ResolvedArtworkData, options: Options): String = buildString {
         append(ARTWORK_DATA_KEY)
         append(':')
-        append(data.result.token.identity.key)
+        append(data.keyToken.identity.key)
         append(':')
-        append(data.result.digest)
+        append(data.keyToken.digest)
         data.callerMemoryCacheKey?.let {
             append(':')
             append(it)
@@ -49,33 +65,69 @@ internal class ArtworkResolvingInterceptor(
     override suspend fun intercept(chain: Interceptor.Chain): coil3.request.ImageResult {
         val original = chain.request
         val candidate = artworkCandidate(original.data)
-        if (candidate != null && candidate.url == null) {
-            return ErrorResult(image = null, request = original, throwable = candidate.error!!)
+        val url = when (candidate) {
+            null -> return chain.proceed()
+            is ArtworkCandidate.Invalid -> {
+                return ErrorResult(image = null, request = original, throwable = candidate.error)
+            }
+            is ArtworkCandidate.Valid -> candidate.url
         }
-        val url = candidate?.url ?: return chain.proceed()
         val policy = artworkPolicy(original)
-        val result = try {
-            repository.load(url, policy)
-        } catch (error: kotlinx.coroutines.CancellationException) {
+        val data = try {
+            val resolution = if (policy.canRead) {
+                repository.resolveFreshToken(url, policy)?.let(ArtworkResolution::Lazy)
+                    ?: ArtworkResolution.Captured(repository.load(url, policy))
+            } else {
+                ArtworkResolution.Captured(repository.load(url, policy))
+            }
+            ResolvedArtworkData(url, policy, resolution, original.memoryCacheKey)
+        } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {
             return ErrorResult(image = null, request = original, throwable = error)
         }
-        val updated = original.newBuilder()
-            .data(ResolvedArtworkData(result, original.memoryCacheKey))
-            .memoryCacheKey(null as String?)
-            .memoryCachePolicy(if (result.reusable) original.memoryCachePolicy else coil3.request.CachePolicy.DISABLED)
-            .diskCachePolicy(coil3.request.CachePolicy.DISABLED)
-            .decoderFactory(ArtworkDecoderFactory())
-            .build()
-        val imageResult = chain.withRequest(updated).proceed()
+
+        val firstResult = proceed(chain, original, data)
+        val actualData = firstResult.artworkFreshnessMismatch()?.let { mismatch ->
+            ResolvedArtworkData(
+                url = url,
+                policy = policy,
+                resolution = ArtworkResolution.Captured(mismatch.actual),
+                callerMemoryCacheKey = original.memoryCacheKey,
+            )
+        }
+        val imageResult = actualData?.let { proceed(chain, original, it) } ?: firstResult
         if (imageResult is ErrorResult && imageResult.throwable.hasArtworkDecodeFailure()) {
-            repository.invalidate(result.token)
+            repository.invalidate(actualData?.keyToken ?: data.keyToken)
         }
         return imageResult
     }
 
-    private data class ArtworkCandidate(val url: String?, val error: Throwable? = null)
+    private suspend fun proceed(
+        chain: Interceptor.Chain,
+        original: ImageRequest,
+        data: ResolvedArtworkData,
+    ): coil3.request.ImageResult {
+        val result = (data.resolution as? ArtworkResolution.Captured)?.result
+        val memoryCachePolicy = if (result == null || result.reusable) {
+            original.memoryCachePolicy
+        } else {
+            CachePolicy.DISABLED
+        }
+        val updated = original.newBuilder()
+            .data(data)
+            .memoryCacheKey(null as String?)
+            .memoryCachePolicy(memoryCachePolicy)
+            .diskCachePolicy(CachePolicy.DISABLED)
+            .decoderFactory(ArtworkDecoderFactory())
+            .build()
+        return chain.withRequest(updated).proceed()
+    }
+
+    private sealed interface ArtworkCandidate {
+        data class Valid(val url: String) : ArtworkCandidate
+        data class Invalid(val error: Throwable) : ArtworkCandidate
+    }
 
     private fun artworkCandidate(data: Any?): ArtworkCandidate? {
         val raw = when (data) {
@@ -93,18 +145,30 @@ internal class ArtworkResolvingInterceptor(
             require(authority.isNotBlank())
             Url(raw).also { require(it.host.isNotBlank()) }
         }.fold(
-                onSuccess = { ArtworkCandidate(raw) },
-                onFailure = { ArtworkCandidate(null, it) },
-            )
+            onSuccess = { ArtworkCandidate.Valid(raw) },
+            onFailure = { ArtworkCandidate.Invalid(it) },
+        )
     }
 
     private fun artworkPolicy(request: ImageRequest): ArtworkReadPolicy = when (request.networkCachePolicy) {
-        coil3.request.CachePolicy.ENABLED -> ArtworkReadPolicy.READ_WRITE
-        coil3.request.CachePolicy.READ_ONLY -> ArtworkReadPolicy.READ_ONLY
-        coil3.request.CachePolicy.WRITE_ONLY -> ArtworkReadPolicy.WRITE_ONLY
-        coil3.request.CachePolicy.DISABLED -> ArtworkReadPolicy.DISABLED
+        CachePolicy.ENABLED -> ArtworkReadPolicy.READ_WRITE
+        CachePolicy.READ_ONLY -> ArtworkReadPolicy.READ_ONLY
+        CachePolicy.WRITE_ONLY -> ArtworkReadPolicy.WRITE_ONLY
+        CachePolicy.DISABLED -> ArtworkReadPolicy.DISABLED
     }
 }
+
+private class ArtworkFreshnessMismatch(val actual: ArtworkResult) : RuntimeException()
+
+private fun coil3.request.ImageResult.artworkFreshnessMismatch(): ArtworkFreshnessMismatch? =
+    (this as? ErrorResult)?.throwable?.let { throwable ->
+        var current: Throwable? = throwable
+        while (current != null) {
+            if (current is ArtworkFreshnessMismatch) return current
+            current = current.cause
+        }
+        null
+    }
 
 private class ArtworkDecodeFailure(cause: Throwable) : RuntimeException(cause)
 
@@ -155,21 +219,32 @@ private class ArtworkDecoder(
 internal class ArtworkPayloadFetcher(
     private val data: ResolvedArtworkData,
     private val options: Options,
+    private val repository: ArtworkRepository,
 ) : Fetcher {
-    override suspend fun fetch(): FetchResult = SourceFetchResult(
-        source = ImageSource(
-            source = Buffer().apply { write(data.result.bytes) },
-            fileSystem = options.fileSystem,
-        ),
-        mimeType = data.result.mimeType,
-        dataSource = when (data.result.source) {
-            ArtworkSource.DISK -> DataSource.DISK
-            ArtworkSource.NETWORK -> DataSource.NETWORK
-        },
-    )
+    override suspend fun fetch(): FetchResult {
+        val result = when (val resolution = data.resolution) {
+            is ArtworkResolution.Captured -> resolution.result
+            is ArtworkResolution.Lazy -> repository.load(data.url, data.policy).also { loaded ->
+                if (loaded.token != resolution.keyToken || !loaded.reusable) {
+                    throw ArtworkFreshnessMismatch(loaded)
+                }
+            }
+        }
+        return SourceFetchResult(
+            source = ImageSource(
+                source = Buffer().apply { write(result.bytes) },
+                fileSystem = options.fileSystem,
+            ),
+            mimeType = result.mimeType,
+            dataSource = when (result.source) {
+                ArtworkSource.DISK -> DataSource.DISK
+                ArtworkSource.NETWORK -> DataSource.NETWORK
+            },
+        )
+    }
 
-    class Factory : Fetcher.Factory<ResolvedArtworkData> {
+    class Factory(private val repository: ArtworkRepository) : Fetcher.Factory<ResolvedArtworkData> {
         override fun create(data: ResolvedArtworkData, options: Options, imageLoader: ImageLoader): Fetcher =
-            ArtworkPayloadFetcher(data, options)
+            ArtworkPayloadFetcher(data, options, repository)
     }
 }

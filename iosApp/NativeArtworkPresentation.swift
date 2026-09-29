@@ -1,5 +1,36 @@
 import Foundation
 
+import UIKit
+
+/// Process-wide decoded-artwork cache shared by Now Playing and CarPlay.
+/// Keys include repository identity and content digest; NSCache limits are advisory.
+final class NativeArtworkImageCache {
+    static let shared = NativeArtworkImageCache()
+
+    private let cache = NSCache<NSString, UIImage>()
+
+    private init() {
+        // NSCache may evict at any time; count and cost limits are advisory.
+        cache.countLimit = 64
+        cache.totalCostLimit = 64 * 1024 * 1024
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(clear),
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+    }
+
+    func image(for key: String) -> UIImage? { cache.object(forKey: key as NSString) }
+
+    func insert(_ image: UIImage, for key: String) {
+        let pixels = image.cgImage.map { $0.bytesPerRow * $0.height } ?? 0
+        cache.setObject(image, forKey: key as NSString, cost: max(pixels, 1))
+    }
+
+    @objc private func clear() { cache.removeAllObjects() }
+}
+
 /// A native artwork response with the exact bytes, MIME type, and repository version
 /// needed to report a decode failure without evicting a newer replacement.
 struct NativeArtworkPayload<Token> {

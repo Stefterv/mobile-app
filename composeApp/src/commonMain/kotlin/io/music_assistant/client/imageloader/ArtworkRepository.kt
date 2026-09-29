@@ -6,15 +6,21 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 data class ArtworkToken internal constructor(
     internal val identity: ArtworkIdentity,
     internal val digest: String,
-)
+) {
+    /** Stable version key for native decoded-image caches; includes identity and content digest. */
+    val cacheKey: String
+        get() = "${identity.key}:$digest"
+}
 
 internal enum class ArtworkSource { DISK, NETWORK }
 
@@ -40,9 +46,18 @@ internal class ArtworkRepository(
     private val serviceClient: ServiceClient,
     private val now: () -> Long,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    private val mutex: Mutex = Mutex(),
 ) {
-    private val mutex = Mutex()
     private val flights = mutableMapOf<ArtworkFlightKey, ArtworkFlight>()
+
+    suspend fun resolveFreshToken(
+        url: String,
+        policy: ArtworkReadPolicy = ArtworkReadPolicy.READ_WRITE,
+    ): ArtworkToken? {
+        if (!policy.canRead) return null
+        val identity = identityFor(url, captureContext(url))
+        return store.readMetadata(identity, now())?.let { ArtworkToken(identity, it.digest) }
+    }
 
     suspend fun load(url: String, policy: ArtworkReadPolicy = ArtworkReadPolicy.READ_WRITE): ArtworkResult {
         val context = captureContext(url)
@@ -71,13 +86,15 @@ internal class ArtworkRepository(
         try {
             return flight.deferred.await()
         } catch (error: CancellationException) {
-            val cancel = mutex.withLock {
-                flight.waiters--
-                if (flight.waiters == 0 && flights[key] === flight) {
-                    flights.remove(key)
-                    true
-                } else {
-                    false
+            val cancel = withContext(NonCancellable) {
+                mutex.withLock {
+                    flight.waiters--
+                    if (flight.waiters == 0 && flights[key] === flight) {
+                        flights.remove(key)
+                        true
+                    } else {
+                        false
+                    }
                 }
             }
             if (cancel) flight.deferred.cancel()
@@ -86,8 +103,10 @@ internal class ArtworkRepository(
             ArtworkDiagnostics.cacheFailure("load", identity.key)
             throw error
         } finally {
-            mutex.withLock {
-                if (flight.deferred.isCompleted && flights[key] === flight) flights.remove(key)
+            withContext(NonCancellable) {
+                mutex.withLock {
+                    if (flight.deferred.isCompleted && flights[key] === flight) flights.remove(key)
+                }
             }
         }
     }
@@ -106,17 +125,7 @@ internal class ArtworkRepository(
         val freshness = artworkFreshness(headers, fetchedAt)
         val digest = artworkSha256Hex(response.bytes)
         ArtworkDiagnostics.logProvenance("network", identity.key, digest)
-        if (!freshness.reusable) {
-            return ArtworkResult(
-                response.bytes,
-                response.headers["Content-Type"],
-                digest,
-                false,
-                ArtworkSource.NETWORK,
-                ArtworkToken(identity, digest),
-            )
-        }
-        if (!policy.canWrite) {
+        if (!freshness.reusable || !policy.canWrite) {
             return ArtworkResult(
                 response.bytes,
                 response.headers["Content-Type"],
@@ -155,14 +164,11 @@ internal class ArtworkRepository(
     }
 
     private suspend fun identityFor(url: String, context: ArtworkRequestContext): ArtworkIdentity {
-        val qualification = if (url.startsWith(
-                "mawebrtc://",
-            )
-        ) {
-                context.serverId ?: error("missing server identity")
-            } else {
-                null
-            }
+        val qualification = if (url.startsWith("mawebrtc://")) {
+            context.serverId ?: error("missing server identity")
+        } else {
+            null
+        }
         val raw = if (qualification == null) url else "$qualification\u0000$url"
         val key = "artwork-v1-" + artworkSha256Hex(raw.encodeToByteArray())
         return ArtworkIdentity(key, url, qualification)

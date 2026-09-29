@@ -9,6 +9,7 @@ import io.ktor.http.Url
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.readAvailable
 import io.music_assistant.client.api.ServiceClient
+import io.music_assistant.client.utils.ARTWORK_MAX_BODY_BYTES
 import io.music_assistant.client.webrtc.WebRTCHttpProxy
 import kotlinx.coroutines.withTimeoutOrNull
 import okio.Buffer
@@ -93,12 +94,7 @@ internal class KtorArtworkTransport(
         }
         return buffer
     }
-
-    private companion object {
-        const val ARTWORK_MAX_BODY_BYTES = 16L * 1024L * 1024L
-    }
 }
-
 private fun ServiceClient.artworkContextIsCurrent(context: ArtworkRequestContext): Boolean {
     val current = webRTCHttpProxy
     val currentId = (sessionState.value as? io.music_assistant.client.utils.HasConnectionData)?.serverInfo?.serverId

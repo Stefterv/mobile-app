@@ -73,6 +73,8 @@ jobs:
         if: ${{ !startsWith(github.head_ref, 'chore/bump-ios-build-') }}
         run: chmod +x ./gradlew
 
+      # Kotlin/Native tests cover shared Kotlin code, including artwork bridge behavior;
+      # the separate XCTest step below covers the native Swift test target.
       - name: Run iOS Kotlin/Native tests
         if: ${{ !startsWith(github.head_ref, 'chore/bump-ios-build-') }}
         run: ./gradlew iosSimulatorArm64Test

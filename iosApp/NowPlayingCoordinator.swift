@@ -3,24 +3,50 @@ import MediaPlayer
 import AVFoundation
 import ComposeApp
 
-/// App-only adapter from KmpHelper's Kotlin result to the Foundation payload.
+/// App-only loader shared by Now Playing and CarPlay. Kotlin resolves the fresh
+/// repository token first; only then can this loader probe the versioned decoded cache.
+/// A cache hit completes without downloading bytes or decoding NSData.
 struct NativeArtworkLoader {
     @discardableResult
     static func loadArtwork(
         urlString: String,
-        completion: @escaping (NativeArtworkPayload<ArtworkToken>?) -> Void
+        completion: @escaping (UIImage?) -> Void
     ) -> ComposeApp.Cancellable {
-        KmpHelper.shared.loadArtwork(urlString: urlString) { result in
-            guard let result else {
-                completion(nil)
-                return
+        var cachedImage: UIImage?
+        return KmpHelper.shared.loadArtwork(
+            urlString: urlString,
+            cachedVersion: { token in
+                guard let image = NativeArtworkImageCache.shared.image(for: token.cacheKey) else {
+                    return false
+                }
+                cachedImage = image
+                return true
+            },
+            completion: { result in
+                if let cachedImage {
+                    completion(cachedImage)
+                    return
+                }
+                guard let result else {
+                    completion(nil)
+                    return
+                }
+                let payload = NativeArtworkPayload(
+                    data: result.data as Data,
+                    mimeType: result.mimeType,
+                    token: result.token
+                )
+                let image = NativeArtworkDecoder.decode(
+                    payload,
+                    decode: { UIImage(data: $0) },
+                    invalidate: { KmpHelper.shared.invalidateArtwork(token: $0) }
+                )
+                if let image, result.reusable {
+                    NativeArtworkImageCache.shared.insert(image, for: result.token.cacheKey)
+                }
+                completion(image)
             }
-            completion(NativeArtworkPayload(
-                data: result.data as Data,
-                mimeType: result.mimeType,
-                token: result.token
-            ))
-        }
+        )
     }
 }
 
@@ -523,12 +549,8 @@ final class NowPlayingCoordinator {
     // MARK: - Artwork loading
 
     private func loadArtwork(urlString: String, completion: @escaping (MPMediaItemArtwork?) -> Void) -> ComposeApp.Cancellable {
-        return NativeArtworkLoader.loadArtwork(urlString: urlString) { result in
-            guard let image = NativeArtworkDecoder.decode(
-                result,
-                decode: { UIImage(data: $0) },
-                invalidate: { KmpHelper.shared.invalidateArtwork(token: $0) }
-            ) else {
+        return NativeArtworkLoader.loadArtwork(urlString: urlString) { image in
+            guard let image else {
                 completion(nil)
                 return
             }

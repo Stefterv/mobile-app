@@ -28,7 +28,7 @@ internal fun buildAppImageLoader(
         .components {
             add(ArtworkResolvingInterceptor(repository))
             add(ArtworkKeyer())
-            add(ArtworkPayloadFetcher.Factory())
+            add(ArtworkPayloadFetcher.Factory(repository))
             add(SvgDecoder.Factory())
         }
         .build()

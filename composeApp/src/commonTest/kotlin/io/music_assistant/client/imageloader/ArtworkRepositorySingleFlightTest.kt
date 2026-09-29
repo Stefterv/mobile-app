@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,6 +41,24 @@ class ArtworkRepositorySingleFlightTest {
         transport.result.complete(response(BYTES))
         assertEquals(BYTES.toList(), repository.load(URL, ArtworkReadPolicy.DISABLED).bytes.toList())
         assertTrue(transport.calls >= 2)
+    }
+
+    @Test
+    fun cancellation_cleanup_survives_mutex_contention() = runTest {
+        val transport = GateTransport()
+        val mutex = Mutex()
+        val repository = repository(transport, mutex)
+        val request = async { repository.load(URL, ArtworkReadPolicy.DISABLED) }
+        transport.started.await()
+        mutex.lock()
+        request.cancel()
+        testScheduler.runCurrent()
+        transport.result.complete(response(BYTES))
+        mutex.unlock()
+        request.join()
+        val retry = repository.load(URL, ArtworkReadPolicy.DISABLED)
+        assertEquals(BYTES.toList(), retry.bytes.toList())
+        assertEquals(2, transport.calls)
     }
 
     @Test
@@ -86,7 +105,7 @@ class ArtworkRepositorySingleFlightTest {
         val transport = RecordingArtworkTransport()
         val gate = CompletableDeferred<Unit>()
         val repository = ArtworkRepository(
-            store = testStore("cancel-write") { gate.await() },
+            store = testStore("cancel-write", beforeWrite = { gate.await() }),
             transport = transport,
             serviceClient = MutableArtworkServiceClient(),
             now = { 1_000L },
@@ -127,6 +146,7 @@ class ArtworkRepositorySingleFlightTest {
 
     private fun repository(
         transport: ArtworkTransport,
+        mutex: Mutex = Mutex(),
         scope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined + SupervisorJob()),
     ): ArtworkRepository = ArtworkRepository(
         store = testStore("singleflight"),
@@ -134,6 +154,7 @@ class ArtworkRepositorySingleFlightTest {
         serviceClient = MutableArtworkServiceClient(),
         now = { 1_000L },
         scope = scope,
+        mutex = mutex,
     )
 
     private class GateTransport : ArtworkTransport {

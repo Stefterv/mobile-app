@@ -1,6 +1,7 @@
 package io.music_assistant.client.webrtc
 
 import co.touchlab.kermit.Logger
+import io.music_assistant.client.utils.ARTWORK_MAX_BODY_BYTES
 import io.music_assistant.client.utils.currentTimeMillis
 import io.music_assistant.client.utils.myJson
 import kotlinx.coroutines.CompletableDeferred
@@ -475,7 +476,7 @@ class WebRTCHttpProxy(
         private const val PROXY_HEADER_MAX_CHARS = 8 * 1024
 
         // Upper bound on a single proxied body, mirroring the transport's reassembly guard.
-        private const val MAX_BODY_BYTES = 16 * 1024 * 1024
+        private const val MAX_BODY_BYTES = ARTWORK_MAX_BODY_BYTES
         private const val HEX_CHARACTERS_PER_BYTE = 2
 
         // Matches both `"id":"..."` and `"id": "..."` (with optional whitespace).

@@ -8,4 +8,5 @@ data class NativeArtworkResult(
     val data: NSData,
     val mimeType: String?,
     val token: ArtworkToken,
+    val reusable: Boolean,
 )

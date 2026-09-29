@@ -22,6 +22,7 @@ import io.music_assistant.client.webrtc.DataChannelWrapper
 import io.music_assistant.client.webrtc.WebRTCHttpProxy
 import io.music_assistant.client.webrtc.model.RemoteId
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,6 +39,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.yield
 import okio.FileSystem
+import okio.ForwardingFileSystem
+import okio.Path
+import okio.Source
 import okio.Path.Companion.toPath
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -127,6 +131,68 @@ class ArtworkBridgeTest {
     }
 
     @Test
+    fun cached_hit_invokes_throwing_completion_once() = runBlocking(Dispatchers.Default) {
+        val mainDispatcher = RecordingMainDispatcher()
+        Dispatchers.setMain(mainDispatcher)
+        val transport = BridgeTransport()
+        val cachePath = ("/tmp/music-assistant-ios-bridge-throwing-${Random.nextLong()}").toPath()
+        val cache = coil3.disk.DiskCache.Builder()
+            .directory(cachePath)
+            .maxSizeBytes(16L * 1024L * 1024L)
+            .build()
+        val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val failures = mutableListOf<Throwable>()
+        val failureSignal = CompletableDeferred<Unit>()
+        val handler = CoroutineExceptionHandler { _, error ->
+            failures += error
+            failureSignal.complete(Unit)
+        }
+        val bridgeScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + handler)
+        startKoin {
+            modules(
+                module {
+                    single<ServiceClient> { BridgeServiceClient() }
+                    single { cache }
+                    single { ArtworkDiskStore(get()) }
+                    single<ArtworkTransport> { transport }
+                    single {
+                        ArtworkRepository(
+                            store = get(),
+                            transport = get(),
+                            serviceClient = get(),
+                            now = { 1_000L },
+                            scope = repositoryScope,
+                        )
+                    }
+                },
+            )
+        }
+        try {
+            val first = CompletableDeferred<io.music_assistant.client.di.NativeArtworkResult?>()
+            KmpHelper.loadArtwork(URL) { first.complete(it) }
+            val firstResult = assertNotNull(awaitOnWorker(first))
+            var completions = 0
+            KmpHelper.loadArtworkWithScope(URL, cachedVersion = { true }, scope = bridgeScope) {
+                completions++
+                error("expected callback failure")
+            }
+            awaitOnWorker(failureSignal)
+            assertEquals(1, completions)
+            assertEquals(1, transport.calls)
+            assertEquals(1, failures.size)
+            assertNotNull(firstResult)
+        } finally {
+            bridgeScope.cancel()
+            repositoryScope.cancel()
+            cache.shutdown()
+            FileSystem.SYSTEM.deleteRecursively(cachePath)
+            stopKoin()
+            Dispatchers.resetMain()
+        }
+        Unit
+    }
+
+    @Test
     fun bridge_result_carries_invalidation_token() = runBlocking(Dispatchers.Default) {
         val mainDispatcher = RecordingMainDispatcher()
         Dispatchers.setMain(mainDispatcher)
@@ -136,6 +202,7 @@ class ArtworkBridgeTest {
             .directory(cachePath)
             .maxSizeBytes(16L * 1024L * 1024L)
             .build()
+        val bridgeFileSystem = BridgeFileSystem()
         val clock = MutableClock(1_000L)
         val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         startKoin {
@@ -143,7 +210,7 @@ class ArtworkBridgeTest {
                 module {
                     single<ServiceClient> { BridgeServiceClient() }
                     single { cache }
-                    single { ArtworkDiskStore(get()) }
+                    single { ArtworkDiskStore(get(), fileSystem = bridgeFileSystem) }
                     single<ArtworkTransport> { transport }
                     single {
                         ArtworkRepository(
@@ -168,7 +235,27 @@ class ArtworkBridgeTest {
             assertTrue(firstCallback.wasExecutingOnConfiguredDispatcher)
             assertTrue(firstResult.data.length > 0uL)
             assertEquals("image/png", firstResult.mimeType)
+            assertTrue(firstResult.reusable)
             assertNotNull(firstResult.token)
+            val snapshot = cache.openSnapshot(firstResult.token.identity.key)
+            assertNotNull(snapshot)
+            bridgeFileSystem.bodyPath = snapshot.data
+            bridgeFileSystem.resetCounters()
+            snapshot.close()
+
+            var probedKey: String? = null
+            val warmHit = CompletableDeferred<io.music_assistant.client.di.NativeArtworkResult?>()
+            KmpHelper.loadArtwork(
+                URL,
+                cachedVersion = { token ->
+                    probedKey = token.cacheKey
+                    true
+                },
+            ) { result -> warmHit.complete(result) }
+            assertEquals(null, awaitOnWorker(warmHit))
+            assertEquals(firstResult.token.cacheKey, probedKey)
+            assertEquals(1, transport.calls)
+            assertEquals(0, bridgeFileSystem.bodyReads)
 
             clock.value = 62_000L
             val second = CompletableDeferred<BridgeCallback>()
@@ -253,6 +340,20 @@ class ArtworkBridgeTest {
             } else {
                 timeoutTransport.fetch(url, context)
             }
+    }
+
+    private class BridgeFileSystem : ForwardingFileSystem(FileSystem.SYSTEM) {
+        var bodyPath: Path? = null
+        var bodyReads = 0
+
+        override fun source(file: Path): Source {
+            if (file == bodyPath) bodyReads++
+            return super.source(file)
+        }
+
+        fun resetCounters() {
+            bodyReads = 0
+        }
     }
 
     private class BridgeTransport : ArtworkTransport {

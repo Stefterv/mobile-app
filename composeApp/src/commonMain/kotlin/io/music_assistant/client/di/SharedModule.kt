@@ -20,10 +20,16 @@ import io.music_assistant.client.data.factory.QueueFactory
 import io.music_assistant.client.data.repository.AiRadioRepository
 import io.music_assistant.client.data.repository.MediaItemRepository
 import io.music_assistant.client.data.repository.ServiceClientMediaItemRepository
+import io.music_assistant.client.imageloader.ArtworkDiskStore
 import io.music_assistant.client.imageloader.ArtworkRepository
+import io.music_assistant.client.imageloader.ArtworkTransport
+import io.music_assistant.client.imageloader.KtorArtworkTransport
+import io.music_assistant.client.imageloader.buildArtworkDiskCache
+import io.music_assistant.client.imageloader.toArtworkLoaderPlatformContext
 import io.music_assistant.client.input.VolumeButtonService
 import io.music_assistant.client.logging.LogSharer
 import io.music_assistant.client.player.MediaSessionBridge
+import io.music_assistant.client.player.PlatformContext
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.settings.SettingsSendspinKeyStore
 import io.music_assistant.client.settings.provideSecretSettings
@@ -53,6 +59,7 @@ import io.music_assistant.client.ui.compose.settings.SettingsViewModel
 import io.music_assistant.client.ui.theme.ThemeViewModel
 import io.music_assistant.client.utils.LocalNetworkPermissionGate
 import io.music_assistant.client.utils.NetworkMonitor
+import io.music_assistant.client.utils.currentTimeMillis
 import io.music_assistant.sendspin.api.SendspinKeyStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -85,12 +92,23 @@ fun sharedModule(
         singleOf(::ErrorMessageBus)
         singleOf(::DeepLinkBus)
         singleOf(::VolumeButtonService)
+        single<ArtworkDiskStore> {
+            ArtworkDiskStore(
+                cache = buildArtworkDiskCache(toArtworkLoaderPlatformContext(get<PlatformContext>())),
+            )
+        }
+        single<ArtworkTransport> {
+            KtorArtworkTransport(
+                httpClient = get(named("webrtcHttpClient")),
+                serviceClient = get(),
+            )
+        }
         single<ArtworkRepository> {
             ArtworkRepository(
                 store = get(),
                 transport = get(),
                 serviceClient = get(),
-                now = { io.music_assistant.client.utils.currentTimeMillis() },
+                now = { currentTimeMillis() },
             )
         }
         singleOf(serviceClientConstructor) { bind<ServiceClient>() }

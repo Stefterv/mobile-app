@@ -167,6 +167,9 @@ kotlin {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.ui.tooling)
+    add("androidHostTestImplementation", libs.kotlin.test)
+    add("androidHostTestImplementation", libs.junit)
+    add("androidHostTestImplementation", libs.robolectric)
 }
 
 // --- Material Design Icons (community pack) webfont + codepoint table ---------

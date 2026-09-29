@@ -154,14 +154,33 @@ object KmpHelper : KoinComponent {
     fun refreshCarPlayNowPlayingState() = mainDataSource.refreshPlayersAndQueues()
 
     // MARK: - Artwork loader (Swift-callable)
+    /** Resolves a fresh token before probing Swift’s decoded-image cache. */
     fun loadArtwork(
         urlString: String,
         completion: (NativeArtworkResult?) -> Unit,
+    ): Cancellable = loadArtwork(urlString, null, completion)
+
+    fun loadArtwork(
+        urlString: String,
+        cachedVersion: ((ArtworkToken) -> Boolean)?,
+        completion: (NativeArtworkResult?) -> Unit,
+    ): Cancellable = loadArtworkWithScope(urlString, cachedVersion, mainScope, completion)
+
+    internal fun loadArtworkWithScope(
+        urlString: String,
+        cachedVersion: ((ArtworkToken) -> Boolean)?,
+        scope: CoroutineScope,
+        completion: (NativeArtworkResult?) -> Unit,
     ): Cancellable {
-        val job = mainScope.launch {
+        val job = scope.launch {
             val result = try {
-                artworkRepository.load(urlString).let {
-                    NativeArtworkResult(it.bytes.toNSData(), it.mimeType, it.token)
+                val freshToken = artworkRepository.resolveFreshToken(urlString)
+                if (freshToken != null && cachedVersion?.invoke(freshToken) == true) {
+                    null
+                } else {
+                    artworkRepository.load(urlString).let {
+                        NativeArtworkResult(it.bytes.toNSData(), it.mimeType, it.token, it.reusable)
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e

@@ -79,6 +79,30 @@ final class NativeArtworkPresentationTests: XCTestCase {
         XCTAssertEqual(invalidated, ["png", "jpeg"])
     }
 
+    func test_native_cache_hits_same_key_and_misses_new_digest() {
+        let suffix = UUID().uuidString
+        let key = "native-cache-\(suffix):digest-a"
+        let image = UIImage()
+        NativeArtworkImageCache.shared.insert(image, for: key)
+
+        XCTAssertTrue(NativeArtworkImageCache.shared.image(for: key) === image)
+        XCTAssertNil(NativeArtworkImageCache.shared.image(for: "native-cache-\(suffix):digest-b"))
+    }
+
+    func test_native_cache_clears_on_memory_warning() {
+        let key = "native-cache-warning-\(UUID().uuidString)"
+        let image = UIImage()
+        NativeArtworkImageCache.shared.insert(image, for: key)
+        XCTAssertNotNil(NativeArtworkImageCache.shared.image(for: key))
+
+        NotificationCenter.default.post(
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+
+        XCTAssertNil(NativeArtworkImageCache.shared.image(for: key))
+    }
+
     func test_generic_mime_does_not_change_successful_decode() {
         let payload = NativeArtworkPayload(data: Data([0x89, 0x50, 0x4E, 0x47]), mimeType: "application/octet-stream", token: "valid")
         var invalidated: [String] = []

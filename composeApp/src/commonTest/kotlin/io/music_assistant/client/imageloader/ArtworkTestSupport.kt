@@ -110,7 +110,11 @@ internal class MutableArtworkServiceClient(
     override fun noServer() = Unit
 }
 
-internal fun testStore(name: String, beforeWrite: (suspend () -> Unit)? = null): ArtworkDiskStore {
+internal fun testStore(
+    name: String,
+    beforeWrite: (suspend () -> Unit)? = null,
+    now: () -> Long = { 0L },
+): ArtworkDiskStore {
     val path = "/tmp/music-assistant-artwork-$name-${Random.nextLong()}".toPath()
     return ArtworkDiskStore(
         cache = DiskCache.Builder()
@@ -118,6 +122,7 @@ internal fun testStore(name: String, beforeWrite: (suspend () -> Unit)? = null):
             .maxSizeBytes(TEST_DISK_CACHE_SIZE_BYTES)
             .build(),
         fileSystem = FileSystem.SYSTEM,
+        now = now,
         beforeWrite = beforeWrite,
     )
 }

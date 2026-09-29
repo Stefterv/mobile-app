@@ -274,17 +274,12 @@ class AndroidAutoArtworkProvider : ContentProvider() {
                 ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { it.write(jpeg) }
             } catch (error: Throwable) {
                 val className = error::class.simpleName ?: "Throwable"
-                val pipeMessage = redactArtworkFailure(className)
-                runCatching { writeSide.closeWithError(pipeMessage) }
-                logger.e { "Unable to serve Android Auto artwork ($className)" }
+                runCatching { writeSide.closeWithError("Artwork unavailable") }
+                logger.w { "Unable to serve Android Auto artwork ($className)" }
             }
         }
         return readSide
     }
-
-    private fun redactArtworkFailure(className: String): String =
-        "$className: Artwork unavailable"
-
     override fun query(
         uri: Uri,
         projection: Array<out String>?,

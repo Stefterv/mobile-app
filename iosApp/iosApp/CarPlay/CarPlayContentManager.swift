@@ -7,14 +7,9 @@ import ComposeApp
 class CarPlayImageLoader {
     static let shared = CarPlayImageLoader()
 
-    func loadImage(from urlString: String, completion: @escaping (UIImage?) -> Void) {
-        _ = NativeArtworkLoader.loadArtwork(urlString: urlString) { result in
-            completion(NativeArtworkDecoder.decode(
-                result,
-                decode: { UIImage(data: $0) },
-                invalidate: { KmpHelper.shared.invalidateArtwork(token: $0) }
-            ))
-        }
+    @discardableResult
+    func loadImage(from urlString: String, completion: @escaping (UIImage?) -> Void) -> ComposeApp.Cancellable {
+        NativeArtworkLoader.loadArtwork(urlString: urlString, completion: completion)
     }
 }
 
