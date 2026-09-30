@@ -282,6 +282,9 @@ fun FullPlayerItem(
     colors: PlayerColors,
     playerAction: (PlayerData, PlayerAction) -> Unit,
     onFavoriteClick: (AppMediaItem) -> Unit,
+    onFavoriteStreamClick: (PlayerData) -> Unit = {},
+    // See MainDataSource.canFavoriteCurrentlyPlaying: on-air song AND server support.
+    canFavoriteStream: Boolean = false,
     livePositionFlow: Flow<Double>?,
     bufferedAheadSecFlow: Flow<Double>? = null,
     lyricsAvailable: Boolean = false,
@@ -684,7 +687,21 @@ fun FullPlayerItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (currentTrack?.canBeFavorited == true) {
+            if (canFavoriteStream) {
+                // Radio favourite adds the on-air song to the library; the queue's `favorite`
+                // flag is the station's, not the song's, so there is no "already favourited"
+                // state and the heart always renders un-filled.
+                IconButton(
+                    modifier = Modifier.size(favoriteSlot),
+                    onClick = { onFavoriteStreamClick(item) },
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.FavoriteBorder,
+                        contentDescription = stringResource(Res.string.cd_favorite),
+                        tint = colors.controlTint,
+                    )
+                }
+            } else if (currentTrack?.canBeFavorited == true) {
                 val isFavorite = currentTrack.favorite == true
                 IconButton(
                     modifier = Modifier.size(favoriteSlot),
