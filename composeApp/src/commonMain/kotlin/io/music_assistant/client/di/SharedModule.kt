@@ -59,6 +59,7 @@ import io.music_assistant.client.ui.compose.settings.SettingsViewModel
 import io.music_assistant.client.ui.theme.ThemeViewModel
 import io.music_assistant.client.utils.LocalNetworkPermissionGate
 import io.music_assistant.client.utils.NetworkMonitor
+import io.music_assistant.client.utils.appVersion
 import io.music_assistant.client.utils.currentTimeMillis
 import io.music_assistant.sendspin.api.SendspinKeyStore
 import kotlinx.coroutines.CoroutineScope
@@ -88,6 +89,7 @@ fun sharedModule(
         single(named(SECRETS)) { provideSecretSettings() }
         single { SettingsRepository(get(), get(named(SECRETS))) }
         singleOf(::NetworkMonitor)
+        single { appVersion(get()) }        // Singleton - fixed for the process lifetime
         singleOf(::LocalNetworkPermissionGate)
         singleOf(::ErrorMessageBus)
         singleOf(::DeepLinkBus)
@@ -151,7 +153,7 @@ fun sharedModule(
         factory { BackgroundRestrictionViewModel(get(), get(), get()) }
         factory { SchemaVersionWarningViewModel(get()) }
         factory { ActionsViewModel(get(), get(), get()) }
-        factory { SettingsViewModel(get(), get(), get(), get()) }
+        factory { SettingsViewModel(get(), get(), get(), get(), get()) }
         factory { DefaultClickActionsViewModel(get()) }
         factory { CarActionsViewModel(get(), get()) }
         factory { CarDspViewModel(get(), get()) }
