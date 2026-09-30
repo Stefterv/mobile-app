@@ -18,7 +18,7 @@ data class QueueTrack(
 )
 
 enum class QualityTier {
-    LQ, SQ, HQ
+    LQ, SQ, HQ, HR
 }
 
 val QueueTrack.qualityTier: QualityTier?
@@ -44,7 +44,7 @@ private fun mapQualityTier(inputQuality: String?): QualityTier? {
         QUALITY_LOW -> QualityTier.LQ
         QUALITY_STANDARD -> QualityTier.SQ
         QUALITY_LOSSLESS -> QualityTier.HQ
-        QUALITY_HI_RES -> QualityTier.HQ
+        QUALITY_HI_RES -> QualityTier.HR
         else -> null
     }
 }

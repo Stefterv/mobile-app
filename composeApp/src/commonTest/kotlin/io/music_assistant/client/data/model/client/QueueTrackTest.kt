@@ -62,7 +62,7 @@ class QueueTrackTest {
         )
 
         assertEquals(
-            QualityTier.HQ,
+            QualityTier.HR,
             queueTrackWithChain(
                 AudioProcessingChain(
                     inputFidelity = AudioFidelity(quality = AudioFidelity.QUALITY_HI_RES),

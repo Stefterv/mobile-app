@@ -59,6 +59,7 @@ class FakeServiceClient : ServiceClient {
 
     private val players = mutableListOf<ServerPlayer>()
     private val playerAudioFormats = mutableMapOf<String, AudioFormat>()
+    private val playerAudioFidelities = mutableMapOf<String, AudioFidelity>()
     private val queues = mutableListOf<ServerQueue>()
     private val queueItems = mutableMapOf<String, List<ServerQueueItem>>()
     private val mediaItemStore = FakeMediaItemStore()
@@ -526,7 +527,10 @@ class FakeServiceClient : ServiceClient {
         val audioProcessingChain = AudioProcessingChain(
             inputFidelity = AudioFidelity(quality = AudioFidelity.QUALITY_HI_RES),
             outputs = listOf(
-                AudioOutputDetails(format = playerAudioFormats[player.playerId]),
+                AudioOutputDetails(
+                    fidelity = playerAudioFidelities[player.playerId],
+                    format = playerAudioFormats[player.playerId],
+                ),
             ),
         )
 
@@ -886,6 +890,10 @@ class FakeServiceClient : ServiceClient {
 
     fun setPlayerAudioFormat(player: ServerPlayer, audioFormat: AudioFormat) {
         playerAudioFormats[player.playerId] = audioFormat
+    }
+
+    fun setPlayerQuality(player: ServerPlayer, quality: String) {
+        playerAudioFidelities[player.playerId] = AudioFidelity(quality = quality)
     }
 
     private fun ServerMediaItem.enrichLibraryItem(): ServerMediaItem {
