@@ -58,12 +58,8 @@ internal class MutableArtworkServiceClient(
         )
         },
     )
-    var onSessionStateRead: (() -> Unit)? = null
     override val sessionState: StateFlow<SessionState>
-        get() {
-            onSessionStateRead?.invoke()
-            return state
-        }
+        get() = state
     override var webRTCHttpProxy: WebRTCHttpProxy? = proxy
     override val isReadyForCommands = MutableStateFlow(false)
     override val externalConsumerActive = MutableStateFlow(false)

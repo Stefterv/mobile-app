@@ -150,17 +150,10 @@ internal class ArtworkRepository(
 
     private fun captureContext(url: String): ArtworkRequestContext {
         if (!url.startsWith("mawebrtc://")) return ArtworkRequestContext(null, null)
-        val initialState = serviceClient.sessionState.value as? HasConnectionData
-        val initialId = initialState?.serverInfo?.serverId
+        val state = serviceClient.sessionState.value as? HasConnectionData
+        val serverId = state?.serverInfo?.serverId
             ?: error("WebRTC server identity unavailable")
-        val initialProxy = serviceClient.webRTCHttpProxy
-        val finalState = serviceClient.sessionState.value as? HasConnectionData
-        val finalId = finalState?.serverInfo?.serverId
-        val finalProxy = serviceClient.webRTCHttpProxy
-        check(initialId == finalId && initialProxy === finalProxy) {
-            "WebRTC artwork connection changed while capturing context"
-        }
-        return ArtworkRequestContext(initialId, initialProxy)
+        return ArtworkRequestContext(serverId, serviceClient.webRTCHttpProxy)
     }
 
     private suspend fun identityFor(url: String, context: ArtworkRequestContext): ArtworkIdentity {

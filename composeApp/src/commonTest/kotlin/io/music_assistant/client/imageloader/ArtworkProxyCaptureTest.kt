@@ -41,21 +41,6 @@ class ArtworkProxyCaptureTest {
     }
 
     @Test
-    fun capture_rejects_server_change_between_identity_reads() = runTest {
-        val oldProxy = WebRTCHttpProxy(sender = { _: JsonObject -> })
-        val newProxy = WebRTCHttpProxy(sender = { _: JsonObject -> })
-        val service = MutableArtworkServiceClient(serverId = "server-a", proxy = oldProxy)
-        var reads = 0
-        service.onSessionStateRead = {
-            if (++reads == 2) service.reconnect("server-b", newProxy)
-        }
-        val transport = RecordingArtworkTransport()
-        val repository = ArtworkRepository(testStore("proxy-capture-unstable"), transport, service, now = { 1_000L })
-        assertFails { repository.load(URL, ArtworkReadPolicy.DISABLED) }
-        assertTrue(transport.calls.isEmpty())
-    }
-
-    @Test
     fun cached_webrtc_serves_without_live_proxy() = runTest {
         val proxy = WebRTCHttpProxy(sender = { _: JsonObject -> })
         val service = MutableArtworkServiceClient(serverId = "server-a", proxy = proxy)
