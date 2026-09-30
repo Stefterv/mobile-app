@@ -13,7 +13,6 @@ import io.music_assistant.client.data.model.client.SortOption
 import io.music_assistant.client.data.model.client.SubItemContext
 import io.music_assistant.client.ui.theme.ThemeSetting
 import io.music_assistant.client.utils.myJson
-import io.music_assistant.client.utils.platformDeviceName
 import io.music_assistant.sendspin.api.AudioCodec
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -450,7 +449,7 @@ class SettingsRepository(
     }
 
     private val _sendspinDeviceName = MutableStateFlow(
-        settings.getStringOrNull("sendspin_device_name") ?: platformDeviceName,
+        settings.getStringOrNull("sendspin_device_name") ?: DEVICE_NAME,
     )
     val sendspinDeviceName = _sendspinDeviceName.asStateFlow()
 
@@ -806,6 +805,7 @@ class SettingsRepository(
 
         val CODECS: List<AudioCodec> = listOf(AudioCodec.OPUS, AudioCodec.FLAC, AudioCodec.PCM)
         val DEFAULT_CODEC: AudioCodec = AudioCodec.OPUS
+        const val DEVICE_NAME: String = "My Phone"
 
         // Advertised to the server in client/hello as `buffer_capacity`: a hard per-player
         // limit in BYTES on queued audio, uniform across codecs. User slider limits, in MB.

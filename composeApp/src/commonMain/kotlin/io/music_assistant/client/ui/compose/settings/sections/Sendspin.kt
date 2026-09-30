@@ -61,7 +61,6 @@ import androidx.compose.ui.unit.dp
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.ui.compose.common.localizedTitle
 import io.music_assistant.client.ui.compose.settings.SendspinPlayerSettings
-import io.music_assistant.client.utils.platformDeviceName
 import io.music_assistant.sendspin.api.AudioCodec
 import musicassistantclient.composeapp.generated.resources.Res
 import musicassistantclient.composeapp.generated.resources.button_cancel
@@ -260,7 +259,7 @@ private fun DeviceNameSection(
     updateSettings: UpdateSendspinSettings,
 ) {
     val focusManager = LocalFocusManager.current
-    val defaultDeviceName = remember { platformDeviceName }
+    val defaultDeviceName = remember { SettingsRepository.DEVICE_NAME }
 
     OutlinedTextField(
         modifier = Modifier

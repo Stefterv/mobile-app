@@ -11,7 +11,6 @@ import io.music_assistant.client.settings.ConnectionType
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.utils.LocalNetworkOnboardingResources
 import io.music_assistant.client.utils.LocalNetworkPermissionGate
-import io.music_assistant.client.utils.platformDeviceName
 import io.music_assistant.sendspin.api.AudioCodec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -227,7 +226,7 @@ class SettingsViewModel(
     )
 
     fun setSendspinPlayerSettings(playerSettings: SendspinPlayerSettings) {
-        settings.setSendspinDeviceName(playerSettings.name ?: platformDeviceName)
+        settings.setSendspinDeviceName(playerSettings.name ?: SettingsRepository.DEVICE_NAME)
         settings.setSendspinBufferCapacityMb(playerSettings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT)
         settings.setSendspinCodecPreference(playerSettings.codecPreference ?: AudioCodec.OPUS)
         settings.setSendspinUseCustomConnection(playerSettings.connectionOverride.enabled)
@@ -284,7 +283,7 @@ data class SendspinPlayerSettings(
 ) {
     companion object {
         val defaults = SendspinPlayerSettings(
-            name = platformDeviceName,
+            name = SettingsRepository.DEVICE_NAME,
             bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
             codecPreference = AudioCodec.OPUS,
             connectionOverride = SendspinConnectionSettings(),
