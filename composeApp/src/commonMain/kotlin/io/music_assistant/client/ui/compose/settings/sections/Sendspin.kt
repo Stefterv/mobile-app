@@ -172,6 +172,16 @@ fun SendspinSettingsManager(
     }
 }
 
+private fun SendspinPlayerSettings.hasNonDefaultAdvancedSettings(): Boolean {
+    val connectionSettings = connectionOverride
+    return bufferCapacityMb != SettingsRepository.BUFFER_MB_DEFAULT ||
+        connectionSettings.enabled ||
+        connectionSettings.tls ||
+        !connectionSettings.host.isNullOrEmpty() ||
+        connectionSettings.port != null && connectionSettings.port != 0 ||
+        !connectionSettings.path.isNullOrEmpty()
+}
+
 @Composable
 fun SendspinSection(
     enabled: Boolean,
@@ -181,8 +191,9 @@ fun SendspinSection(
     modifier: Modifier = Modifier,
     trailingSection: @Composable (() -> Unit) = {  },
 ) {
-    // TODO: Show expanded advanced config if any of the advanced config is set to non-default value
-    var showAdvancedConfig by remember { mutableStateOf(false) }
+    var showAdvancedConfig by remember {
+        mutableStateOf(settings.hasNonDefaultAdvancedSettings())
+    }
 
     Column {
         Row(
