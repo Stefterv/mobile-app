@@ -74,11 +74,7 @@ fun AudioChainDialog(
                     ChainStage(
                         header = stringResource(Res.string.quality_dialog_output),
                         name = output.playerIds.orEmpty().let {
-                            if (it.isNotEmpty()) {
-                                playerNames[it[0]]
-                            } else {
-                                null
-                            }
+                            it.firstOrNull()?.let { id -> playerNames[id] }
                         },
                         format = output.format,
                     )
