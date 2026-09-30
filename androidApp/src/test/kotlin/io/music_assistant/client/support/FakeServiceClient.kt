@@ -7,6 +7,8 @@ import io.music_assistant.client.api.Request
 import io.music_assistant.client.api.ServiceClient
 import io.music_assistant.client.data.model.client.MediaType
 import io.music_assistant.client.data.model.server.AudioFormat
+import io.music_assistant.client.data.model.server.AudioOutputDetails
+import io.music_assistant.client.data.model.server.AudioProcessingChain
 import io.music_assistant.client.data.model.server.AuthProvider
 import io.music_assistant.client.data.model.server.EventType
 import io.music_assistant.client.data.model.server.PlayerState
@@ -519,11 +521,20 @@ class FakeServiceClient : ServiceClient {
         items: List<ServerQueueItem>,
     ) {
         val queueIndex = queues.indexOfFirst { it.queueId == queueId }
+        val player = findPlayer { it.activeSource == queueId }.second
+        val audioProcessingChain = AudioProcessingChain(
+            outputs = listOf(
+                AudioOutputDetails(format = playerAudioFormats[player.playerId]),
+            ),
+        )
 
         val firstItem = items.firstOrNull()
         val currentItem = firstItem?.copy(
             streamDetails = firstItem.streamDetails.let { streamDetails ->
-                streamDetails ?: StreamDetails(audioFormat = AudioFormat())
+                streamDetails?.copy(audioProcessingChain = audioProcessingChain) ?: StreamDetails(
+                    audioFormat = AudioFormat(),
+                    audioProcessingChain = audioProcessingChain,
+                )
             },
         ) ?: firstItem
 

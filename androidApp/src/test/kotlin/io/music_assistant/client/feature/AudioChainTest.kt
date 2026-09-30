@@ -29,7 +29,7 @@ class AudioChainTest {
     private val serviceClient: FakeServiceClient by inject(ServiceClient::class.java)
 
     @Test
-    fun `does not crash`() {
+    fun `can view output format for current queue item`() {
         val album = ServerMediaItemFixtures.album()
         val track = ServerMediaItemFixtures.track(album = album)
         serviceClient.addItems(track)
@@ -48,5 +48,7 @@ class AudioChainTest {
             .clickOnMedia(album)
             .clickPlay()
             .expandPlayer(player.displayName, playing = true, item = track.name)
+            .clickQualityTier("HQ")
+            .assertFormatDisplayed(audioFormat)
     }
 }

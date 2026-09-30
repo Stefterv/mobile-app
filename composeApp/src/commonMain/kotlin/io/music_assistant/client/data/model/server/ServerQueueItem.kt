@@ -36,6 +36,25 @@ data class StreamDetails(
 //    @SerialName("strip_silence_end") val stripSilenceEnd: Boolean,
     @SerialName("dsp") val dsp: Map<String, DSPSettings>? = null,
     @SerialName("stream_metadata") val streamMetadata: ServerStreamMetadata? = null,
+    @SerialName("audio_processing") val audioProcessingChain: AudioProcessingChain? = null,
+)
+
+@Serializable
+data class AudioProcessingChain(
+    @SerialName("input_fidelity") val inputFidelity: AudioFidelity? = null,
+    @SerialName("outputs") val outputs: List<AudioOutputDetails>? = null,
+)
+
+@Serializable
+data class AudioFidelity(
+    @SerialName("quality") val quality: String? = null,
+)
+
+@Serializable
+data class AudioOutputDetails(
+    @SerialName("output_format") val format: AudioFormat? = null,
+    @SerialName("fidelity") val fidelity: AudioFidelity? = null,
+
 )
 
 /**

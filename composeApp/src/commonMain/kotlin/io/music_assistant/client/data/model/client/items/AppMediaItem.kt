@@ -158,16 +158,7 @@ val AudioFormat.qualityTier: QualityTier?
 
 val QueueTrack.qualityTier: QualityTier?
     get() {
-        val stages = listOfNotNull(format) +
-                dsp?.values.orEmpty().mapNotNull { it.outputFormat }
-        if (stages.isEmpty()) return null
-        val tiers = stages.mapNotNull { it.qualityTier }
-        if (tiers.isEmpty()) return null
-        return when {
-            QualityTier.LQ in tiers -> QualityTier.LQ
-            QualityTier.SQ in tiers -> QualityTier.SQ
-            else -> QualityTier.HQ
-        }
+        return QualityTier.HQ
     }
 
 internal data class ProviderHash(val itemId: String, val providerInstance: String)

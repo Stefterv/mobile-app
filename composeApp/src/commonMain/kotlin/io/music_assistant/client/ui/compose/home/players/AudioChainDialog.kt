@@ -26,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import io.music_assistant.client.data.model.client.PlayerData
 import io.music_assistant.client.data.model.client.QueueTrack
 import io.music_assistant.client.data.model.client.items.QualityTier
 import io.music_assistant.client.data.model.client.items.description
@@ -41,14 +40,15 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun AudioChainDialog(
     queueTrack: QueueTrack,
-    player: PlayerData,
+//    player: PlayerData,
     onDismissRequest: () -> Unit,
 ) {
-    val playerNames: Map<String, String> = buildMap {
-        put(player.player.id, player.player.name)
-        player.childrenBinds.forEach { put(it.id, it.name) }
-        player.parentBind?.let { put(it.id, it.name) }
-    }
+//    val playerNames: Map<String, String> = buildMap {
+//        put(player.player.id, player.player.name)
+//        player.childrenBinds.forEach { put(it.id, it.name) }
+//        player.parentBind?.let { put(it.id, it.name) }
+//    }
+
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -69,13 +69,13 @@ fun AudioChainDialog(
                     format = queueTrack.format,
                 )
 
-                queueTrack.dsp.orEmpty().forEach { (playerId, dspSettings) ->
+                queueTrack.audioProcessingChain?.outputs.orEmpty().forEach { output ->
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    val playerName = playerNames[playerId] ?: playerId
+//                    val playerName = playerNames[playerId] ?: playerId
                     ChainStage(
                         header = stringResource(Res.string.quality_dialog_output),
-                        title = playerName,
-                        format = dspSettings.outputFormat,
+                        title = "",
+                        format = output.format,
                     )
                 }
             }
