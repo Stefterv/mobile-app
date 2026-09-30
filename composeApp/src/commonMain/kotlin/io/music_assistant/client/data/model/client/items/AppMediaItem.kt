@@ -140,22 +140,6 @@ val AudioFormat.description: String
 
 enum class QualityTier { HQ, SQ, LQ }
 
-private val lossyContentTypes = setOf("mp3", "aac", "ogg", "opus", "vorbis", "m4a", "wma")
-
-private fun AudioFormat.isLossy(): Boolean =
-    contentType?.lowercase()?.let { ct -> lossyContentTypes.any { ct.contains(it) } } == true
-
-private const val HI_RES_SAMPLE_RATE = 44_100
-private const val HI_RES_BITRATE = 16
-
-val AudioFormat.qualityTier: QualityTier?
-    get() {
-        val sr = sampleRate ?: return null
-        val bd = bitDepth ?: return null
-        if (sr < HI_RES_SAMPLE_RATE || bd < HI_RES_BITRATE) return QualityTier.LQ
-        return if (isLossy()) QualityTier.SQ else QualityTier.HQ
-    }
-
 val QueueTrack.qualityTier: QualityTier?
     get() {
         return QualityTier.HQ

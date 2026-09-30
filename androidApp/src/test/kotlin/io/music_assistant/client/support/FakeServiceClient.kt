@@ -530,12 +530,11 @@ class FakeServiceClient : ServiceClient {
 
         val firstItem = items.firstOrNull()
         val currentItem = firstItem?.copy(
-            streamDetails = firstItem.streamDetails.let { streamDetails ->
-                streamDetails?.copy(audioProcessingChain = audioProcessingChain) ?: StreamDetails(
-                    audioFormat = AudioFormat(),
+            streamDetails = (firstItem.streamDetails ?: StreamDetails(audioFormat = AudioFormat()))
+                .copy(
                     audioProcessingChain = audioProcessingChain,
-                )
-            },
+                    provider = firstItem.mediaItem?.providerMappings?.firstOrNull()?.providerInstance,
+                ),
         ) ?: firstItem
 
         queues[queueIndex] =
