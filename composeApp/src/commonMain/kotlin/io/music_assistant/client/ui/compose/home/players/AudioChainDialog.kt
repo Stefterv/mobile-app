@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import io.music_assistant.client.data.model.client.PlayerData
 import io.music_assistant.client.data.model.client.QueueTrack
 import io.music_assistant.client.data.model.client.items.QualityTier
 import io.music_assistant.client.data.model.client.items.description
@@ -40,14 +41,14 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun AudioChainDialog(
     queueTrack: QueueTrack,
-//    player: PlayerData,
+    player: PlayerData,
     onDismissRequest: () -> Unit,
 ) {
-//    val playerNames: Map<String, String> = buildMap {
-//        put(player.player.id, player.player.name)
-//        player.childrenBinds.forEach { put(it.id, it.name) }
-//        player.parentBind?.let { put(it.id, it.name) }
-//    }
+    val playerNames: Map<String, String> = buildMap {
+        put(player.player.id, player.player.name)
+        player.childrenBinds.forEach { put(it.id, it.name) }
+        player.parentBind?.let { put(it.id, it.name) }
+    }
 
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
@@ -70,11 +71,17 @@ fun AudioChainDialog(
                 )
 
                 queueTrack.audioProcessingChain?.outputs.orEmpty().forEach { output ->
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-//                    val playerName = playerNames[playerId] ?: playerId
+                    val playerName = if (output.playerIds.orEmpty().isNotEmpty()) {
+                        playerNames[output.playerIds!![0]]
+                    } else {
+                        null
+                    }
+
                     ChainStage(
                         header = stringResource(Res.string.quality_dialog_output),
-                        title = "",
+                        title = playerName,
                         format = output.format,
                     )
                 }

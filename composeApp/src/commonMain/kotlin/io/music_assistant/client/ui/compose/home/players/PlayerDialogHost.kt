@@ -91,7 +91,7 @@ fun PlayerDialogHost(
         is PlayerDialogRequest.AudioChain -> player.queueInfo?.currentItem?.let { queueTrack ->
             AudioChainDialog(
                 queueTrack = queueTrack,
-//                player = player,
+                player = player,
                 onDismissRequest = onDismiss,
             )
         }

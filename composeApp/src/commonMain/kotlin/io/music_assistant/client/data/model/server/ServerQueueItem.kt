@@ -52,6 +52,7 @@ data class AudioFidelity(
 
 @Serializable
 data class AudioOutputDetails(
+    @SerialName("player_ids") val playerIds: List<String>? = null,
     @SerialName("output_format") val format: AudioFormat? = null,
     @SerialName("fidelity") val fidelity: AudioFidelity? = null,
 
