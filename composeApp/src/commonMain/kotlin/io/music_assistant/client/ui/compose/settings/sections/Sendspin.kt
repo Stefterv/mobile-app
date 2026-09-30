@@ -44,8 +44,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,12 +93,7 @@ import musicassistantclient.composeapp.generated.resources.settings_use_tls_wss_
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-
-
-val LocalSendSpinSettings =
-    compositionLocalOf<Pair<SendspinPlayerSettings, (SendspinPlayerSettings.() -> Unit) -> Unit>> {
-    Pair(SendspinPlayerSettings.defaults) {  }
-}
+private typealias UpdateSendspinSettings = (SendspinPlayerSettings.() -> Unit) -> Unit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +103,6 @@ fun SendspinSettingsManager(
     setSendspinEnabled: (Boolean) -> Unit,
     setSendspinPlayerSettings: (SendspinPlayerSettings) -> Unit,
 ) {
-
     // TODO: add debounce for changing settings
 
     val updateSetting = { settings: SendspinPlayerSettings ->
@@ -171,44 +163,46 @@ fun SendspinSettingsManager(
         }
     }
 
-    CompositionLocalProvider(
-        LocalSendSpinSettings provides Pair(newSettings) { updateFunction ->
-            newSettings = newSettings
-                .copy(
-                    connectionOverride = newSettings.connectionOverride.copy(),
-                )
-                .apply(updateFunction)
-            if (!sendspinEnabled) {
-                commitSettings()
-            }
+    val updateSettings: UpdateSendspinSettings = { updateFunction ->
+        newSettings = newSettings
+            .copy(
+                connectionOverride = newSettings.connectionOverride.copy(),
+            )
+            .apply(updateFunction)
+        if (!sendspinEnabled) {
+            commitSettings()
+        }
+    }
+
+    SendspinSection(
+        enabled = sendspinEnabled,
+        settings = newSettings,
+        updateSettings = updateSettings,
+        setEnabled = {
+            if (it) commitSettings()
+            setSendspinEnabled(it)
         },
     ) {
-        SendspinSection(
-            enabled = sendspinEnabled,
-            setEnabled = {
-                if (it) commitSettings()
-                setSendspinEnabled(it)
+        ActionButtonsSection(
+            isResettable = newSettings != SendspinPlayerSettings.defaults,
+            onResetToDefaults = {
+                newSettings = SendspinPlayerSettings.defaults
             },
-        ) {
-            ActionButtonsSection(
-                isResettable = newSettings != SendspinPlayerSettings.defaults,
-                onResetToDefaults = {
-                    newSettings = SendspinPlayerSettings.defaults
-                },
-                isSavable = newSettings != sendspinPlayerSettings,
-                onSaveChanges = {
-                    showInterruptionDialog = {
-                        commitSettings()
-                    }
-                },
-            )
-        }
+            isSavable = newSettings != sendspinPlayerSettings,
+            onSaveChanges = {
+                showInterruptionDialog = {
+                    commitSettings()
+                }
+            },
+        )
     }
 }
 
 @Composable
 fun SendspinSection(
     enabled: Boolean,
+    settings: SendspinPlayerSettings,
+    updateSettings: UpdateSendspinSettings,
     setEnabled: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     trailingSection: @Composable (() -> Unit) = {  },
@@ -246,14 +240,14 @@ fun SendspinSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
             )
-            DeviceNameSection()
-            CodecPreferenceSection()
+            DeviceNameSection(settings = settings, updateSettings = updateSettings)
+            CodecPreferenceSection(settings = settings, updateSettings = updateSettings)
             AdvancedConfigToggleSection(
                 showAdvancedConfig = showAdvancedConfig,
                 toggleShowAdvancedConfig = { showAdvancedConfig = !showAdvancedConfig },
             )
             AnimatedVisibility(visible = showAdvancedConfig) {
-                AdvancedConfigSection()
+                AdvancedConfigSection(settings = settings, updateSettings = updateSettings)
             }
             trailingSection()
         }
@@ -261,9 +255,11 @@ fun SendspinSection(
 }
 
 @Composable
-private fun DeviceNameSection() {
+private fun DeviceNameSection(
+    settings: SendspinPlayerSettings,
+    updateSettings: UpdateSendspinSettings,
+) {
     val focusManager = LocalFocusManager.current
-    val (settings, updateSettings) = LocalSendSpinSettings.current
     val platformDeviceName = remember { platformDeviceName() }
 
     OutlinedTextField(
@@ -293,7 +289,10 @@ private fun DeviceNameSection() {
 }
 
 @Composable
-private fun CodecPreferenceSection() {
+private fun CodecPreferenceSection(
+    settings: SendspinPlayerSettings,
+    updateSettings: UpdateSendspinSettings,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -306,8 +305,6 @@ private fun CodecPreferenceSection() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
         )
-        val (settings, updateSettings) = LocalSendSpinSettings.current
-
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SettingsRepository.CODECS.forEachIndexed { index, codec ->
                 SegmentedButton(
@@ -398,22 +395,26 @@ private fun ActionButtonsSection(
 }
 
 @Composable
-private fun AdvancedConfigSection() {
+private fun AdvancedConfigSection(
+    settings: SendspinPlayerSettings,
+    updateSettings: UpdateSendspinSettings,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(20.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
     ) {
-        CustomConnectionSection()
-        BufferSizeSection()
+        CustomConnectionSection(settings = settings, updateSettings = updateSettings)
+        BufferSizeSection(settings = settings, updateSettings = updateSettings)
     }
 }
 
 @Composable
-private fun CustomConnectionSection() {
-    val (settings, updateSettings) = LocalSendSpinSettings.current
-
+private fun CustomConnectionSection(
+    settings: SendspinPlayerSettings,
+    updateSettings: UpdateSendspinSettings,
+) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -465,14 +466,15 @@ private fun CustomConnectionSection() {
             label = { Text(stringResource(Res.string.settings_use_tls_wss_short)) },
             )
         }
-
-        ConnectionFieldsSection()
+        ConnectionFieldsSection(settings = settings, updateSettings = updateSettings)
     }
 }
 
 @Composable
-private fun ConnectionFieldsSection() {
-    val (settings, updateSettings) = LocalSendSpinSettings.current
+private fun ConnectionFieldsSection(
+    settings: SendspinPlayerSettings,
+    updateSettings: UpdateSendspinSettings,
+) {
     val focusManager = LocalFocusManager.current
 
     var isHostFocused by remember { mutableStateOf(false) }
@@ -578,9 +580,11 @@ private fun ConnectionFieldsSection() {
 }
 
 @Composable
-private fun BufferSizeSection() {
+private fun BufferSizeSection(
+    settings: SendspinPlayerSettings,
+    updateSettings: UpdateSendspinSettings,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        val (settings, updateSettings) = LocalSendSpinSettings.current
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

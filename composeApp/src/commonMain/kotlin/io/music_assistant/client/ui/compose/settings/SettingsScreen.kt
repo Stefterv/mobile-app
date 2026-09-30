@@ -356,7 +356,6 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                                     sendspinPlayerSettings = sendspinPlayerSettings,
                                     setSendspinEnabled = { viewModel.setSendspinEnabled(it) },
                                     setSendspinPlayerSettings = { viewModel.setSendspinPlayerSettings(it) },
-                                    resetSendspinPlayerSettings = { viewModel.resetSendspinPlayerSettings() }
                                 )
 
                                 // Car options route to the local player — only meaningful when
