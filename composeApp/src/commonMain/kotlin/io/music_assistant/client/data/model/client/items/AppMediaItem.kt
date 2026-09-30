@@ -5,7 +5,6 @@ import io.music_assistant.client.data.model.client.ImageInfo
 import io.music_assistant.client.data.model.client.ImageType
 import io.music_assistant.client.data.model.client.MediaType
 import io.music_assistant.client.data.model.client.Metadata
-import io.music_assistant.client.data.model.client.QueueTrack
 import io.music_assistant.client.data.model.server.AudioFormat
 import io.music_assistant.client.data.model.server.ProviderMapping
 import io.music_assistant.client.data.model.server.ServerMediaItem
@@ -137,13 +136,6 @@ val AudioFormat.description: String
         sampleRate?.let { "$it Hz" },
         bitDepth?.let { "$it bit" },
     ).joinToString()
-
-enum class QualityTier { HQ, SQ, LQ }
-
-val QueueTrack.qualityTier: QualityTier?
-    get() {
-        return QualityTier.HQ
-    }
 
 internal data class ProviderHash(val itemId: String, val providerInstance: String)
 

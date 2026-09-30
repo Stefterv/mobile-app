@@ -48,7 +48,15 @@ data class AudioProcessingChain(
 @Serializable
 data class AudioFidelity(
     @SerialName("quality") val quality: String? = null,
-)
+) {
+    companion object {
+        const val QUALITY_UNKNOWN = "unknown"
+        const val QUALITY_LOW = "low"
+        const val QUALITY_STANDARD = "standard"
+        const val QUALITY_LOSSLESS = "lossless"
+        const val QUALITY_HI_RES = "hi_res"
+    }
+}
 
 @Serializable
 data class AudioOutputDetails(

@@ -6,6 +6,7 @@ import io.music_assistant.client.api.ConnectionInfo
 import io.music_assistant.client.api.Request
 import io.music_assistant.client.api.ServiceClient
 import io.music_assistant.client.data.model.client.MediaType
+import io.music_assistant.client.data.model.server.AudioFidelity
 import io.music_assistant.client.data.model.server.AudioFormat
 import io.music_assistant.client.data.model.server.AudioOutputDetails
 import io.music_assistant.client.data.model.server.AudioProcessingChain
@@ -523,6 +524,7 @@ class FakeServiceClient : ServiceClient {
         val queueIndex = queues.indexOfFirst { it.queueId == queueId }
         val player = findPlayer { it.activeSource == queueId }.second
         val audioProcessingChain = AudioProcessingChain(
+            inputFidelity = AudioFidelity(quality = AudioFidelity.QUALITY_HI_RES),
             outputs = listOf(
                 AudioOutputDetails(format = playerAudioFormats[player.playerId]),
             ),
