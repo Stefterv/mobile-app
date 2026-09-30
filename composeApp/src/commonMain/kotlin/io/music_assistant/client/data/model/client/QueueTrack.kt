@@ -26,11 +26,7 @@ val QueueTrack.qualityTier: QualityTier?
         val inputQuality = mapQualityTier(audioProcessingChain?.inputFidelity?.quality)
         val outputQualities =
             audioProcessingChain?.outputs.orEmpty().mapNotNull { mapQualityTier(it.fidelity?.quality) }
-        val outputQuality = if (outputQualities.isNotEmpty()) {
-            outputQualities.min()
-        } else {
-            null
-        }
+        val outputQuality = outputQualities.minOrNull()
 
         return if (inputQuality != null && outputQuality != null) {
             listOf(inputQuality, outputQuality).min()

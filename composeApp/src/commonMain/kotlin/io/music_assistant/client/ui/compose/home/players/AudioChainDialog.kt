@@ -64,11 +64,7 @@ fun AudioChainDialog(
 
                 ChainStage(
                     header = stringResource(Res.string.quality_dialog_input),
-                    name = if (queueTrack.provider != null) {
-                        providerDetails(queueTrack.provider)?.name
-                    } else {
-                        null
-                    },
+                    name = queueTrack.provider?.let(providerDetails)?.name,
                     format = queueTrack.format,
                 )
 
@@ -77,10 +73,12 @@ fun AudioChainDialog(
 
                     ChainStage(
                         header = stringResource(Res.string.quality_dialog_output),
-                        name = if (output.playerIds.orEmpty().isNotEmpty()) {
-                            playerNames[output.playerIds!![0]]
-                        } else {
-                            null
+                        name = output.playerIds.orEmpty().let {
+                            if (it.isNotEmpty()) {
+                                playerNames[it[0]]
+                            } else {
+                                null
+                            }
                         },
                         format = output.format,
                     )
