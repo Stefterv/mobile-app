@@ -151,6 +151,7 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
     val dataConnection = (sessionState as? SessionState.Connected)?.dataConnectionState
     val isAuthenticated = dataConnection is DataConnectionState.Authenticated
     val sendspinEnabled by viewModel.sendspinEnabled.collectAsStateWithLifecycle()
+    val sendspinPlayerSettings by viewModel.sendspinPlayerSettings.collectAsStateWithLifecycle()
     val hasCrashLog by viewModel.hasCrashLog.collectAsStateWithLifecycle()
     val isPreparingShare by viewModel.isPreparingShare.collectAsStateWithLifecycle()
     val localNetworkOnboardingShown by viewModel.localNetworkOnboardingShown
@@ -350,7 +351,13 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                                 // State 4: Connected and authenticated
 
                                 // Local Player Section
-                                SendspinSettingsManager(viewModel)
+                                SendspinSettingsManager(
+                                    sendspinEnabled = sendspinEnabled,
+                                    sendspinPlayerSettings = sendspinPlayerSettings,
+                                    setSendspinEnabled = { viewModel.setSendspinEnabled(it) },
+                                    setSendspinPlayerSettings = { viewModel.setSendspinPlayerSettings(it) },
+                                    resetSendspinPlayerSettings = { viewModel.resetSendspinPlayerSettings() }
+                                )
 
                                 // Car options route to the local player — only meaningful when
                                 // it's reachable (authenticated) and enabled.

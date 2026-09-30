@@ -11,11 +11,15 @@ import io.music_assistant.client.settings.ConnectionType
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.utils.LocalNetworkOnboardingResources
 import io.music_assistant.client.utils.LocalNetworkPermissionGate
+import io.music_assistant.client.utils.platformDeviceName
 import io.music_assistant.sendspin.api.AudioCodec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
@@ -175,26 +179,63 @@ class SettingsViewModel(
 
     // Sendspin settings
     val sendspinEnabled = settings.sendspinEnabled
-    val sendspinDeviceName = settings.sendspinDeviceName
-    val sendspinUseCustomConnection = settings.sendspinUseCustomConnection
-    val sendspinPort = settings.sendspinPort
-    val sendspinPath = settings.sendspinPath
-    val sendspinCodecPreference = settings.sendspinCodecPreference
-    val sendspinBufferCapacityMb = settings.sendspinBufferCapacityMb
-    val sendspinHost = settings.sendspinHost
-    val sendspinUseTls = settings.sendspinUseTls
 
     fun setSendspinEnabled(enabled: Boolean) = settings.setSendspinEnabled(enabled)
-    fun setSendspinDeviceName(name: String) = settings.setSendspinDeviceName(name)
-    fun setSendspinUseCustomConnection(enabled: Boolean) =
-        settings.setSendspinUseCustomConnection(enabled)
 
-    fun setSendspinPort(port: Int) = settings.setSendspinPort(port)
-    fun setSendspinPath(path: String) = settings.setSendspinPath(path)
-    fun setSendspinCodecPreference(codec: AudioCodec) = settings.setSendspinCodecPreference(codec)
-    fun setSendspinBufferCapacityMb(mb: Int) = settings.setSendspinBufferCapacityMb(mb)
-    fun setSendspinHost(host: String) = settings.setSendspinHost(host)
-    fun setSendspinUseTls(enabled: Boolean) = settings.setSendspinUseTls(enabled)
+    val sendspinPlayerSettings: StateFlow<SendspinPlayerSettings> = combine(
+        combine(
+            settings.sendspinUseCustomConnection,
+            settings.sendspinUseTls,
+            settings.sendspinHost,
+            settings.sendspinPort,
+            settings.sendspinPath,
+        ) { customConnectionEnabled, useTls, host, port, path ->
+            SendspinConnectionSettings(
+                enabled = customConnectionEnabled,
+                tls = useTls,
+                host = host,
+                port = port,
+                path = path,
+            )
+        },
+        settings.sendspinDeviceName,
+        settings.sendspinBufferCapacityMb,
+        settings.sendspinCodecPreference,
+    ) { connectionOverride, name, bufferCapacityMb, codecPreference ->
+        SendspinPlayerSettings(
+            name = name,
+            bufferCapacityMb = bufferCapacityMb,
+            codecPreference = codecPreference,
+            connectionOverride = connectionOverride,
+        )
+    }
+    .stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = SendspinPlayerSettings(
+            name = settings.sendspinDeviceName.value,
+            bufferCapacityMb = settings.sendspinBufferCapacityMb.value,
+            codecPreference = settings.sendspinCodecPreference.value,
+            connectionOverride = SendspinConnectionSettings(
+                enabled = settings.sendspinUseCustomConnection.value,
+                tls = settings.sendspinUseTls.value,
+                host = settings.sendspinHost.value,
+                port = settings.sendspinPort.value,
+                path = settings.sendspinPath.value,
+            ),
+        ),
+    )
+
+    fun setSendspinPlayerSettings(playerSettings: SendspinPlayerSettings) {
+        settings.setSendspinDeviceName(playerSettings.name ?: platformDeviceName())
+        settings.setSendspinBufferCapacityMb(playerSettings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT)
+        settings.setSendspinCodecPreference(playerSettings.codecPreference ?: AudioCodec.OPUS)
+        settings.setSendspinUseCustomConnection(playerSettings.connectionOverride.enabled)
+        settings.setSendspinUseTls(playerSettings.connectionOverride.tls)
+        settings.setSendspinHost(playerSettings.connectionOverride.host ?: "")
+        settings.setSendspinPort(playerSettings.connectionOverride.port ?: 0)
+        settings.setSendspinPath(playerSettings.connectionOverride.path ?: "")
+    }
 
     // Connection method preference
     val preferredConnectionMethod = settings.preferredConnectionMethod
@@ -233,4 +274,32 @@ class SettingsViewModel(
     val localNetworkOnboardingShown = settings.localNetworkOnboardingShown
 
     fun dismissLocalNetworkOnboarding() = settings.setLocalNetworkOnboardingShown()
+}
+
+data class SendspinPlayerSettings(
+    var name: String?,
+    var bufferCapacityMb: Int?,
+    var codecPreference: AudioCodec?,
+    var connectionOverride: SendspinConnectionSettings,
+) {
+    companion object {
+        val defaults = SendspinPlayerSettings(
+            name = platformDeviceName(),
+            bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
+            codecPreference = AudioCodec.OPUS,
+            connectionOverride = SendspinConnectionSettings(),
+        )
+    }
+}
+
+data class SendspinConnectionSettings(
+    var enabled: Boolean = false,
+    var tls: Boolean = false,
+    var host: String? = null,
+    var port: Int? = null,
+    var path: String? = null,
+) {
+    companion object {
+        val defaults = SendspinConnectionSettings()
+    }
 }

@@ -60,10 +60,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.ui.compose.common.localizedTitle
-import io.music_assistant.client.ui.compose.settings.SettingsViewModel
+import io.music_assistant.client.ui.compose.settings.SendspinPlayerSettings
 import io.music_assistant.client.utils.platformDeviceName
 import io.music_assistant.sendspin.api.AudioCodec
 import musicassistantclient.composeapp.generated.resources.Res
@@ -96,33 +95,7 @@ import musicassistantclient.composeapp.generated.resources.settings_use_tls_wss_
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-data class SendspinPlayerSettings(
-    var name: String?,
-    var bufferCapacityMb: Int?,
-    var codecPreference: AudioCodec?,
-    val connectionOverride: SendspinConnectionSettings,
-) {
-    companion object {
-        val defaults = SendspinPlayerSettings(
-            name = platformDeviceName(),
-            bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
-            codecPreference = AudioCodec.OPUS,
-            connectionOverride = SendspinConnectionSettings(),
-        )
-    }
-}
 
-data class SendspinConnectionSettings(
-    var enabled: Boolean = false,
-    var tls: Boolean = false,
-    var host: String? = null,
-    var port: Int? = null,
-    var path: String? = null,
-) {
-    companion object {
-        val defaults = SendspinConnectionSettings()
-    }
-}
 
 val LocalSendSpinSettings =
     compositionLocalOf<Pair<SendspinPlayerSettings, (SendspinPlayerSettings.() -> Unit) -> Unit>> {
@@ -131,78 +104,22 @@ val LocalSendSpinSettings =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SendspinSettingsManager(viewModel: SettingsViewModel) {
-    val enabled by viewModel.sendspinEnabled.collectAsStateWithLifecycle()
-    val deviceName by viewModel.sendspinDeviceName.collectAsStateWithLifecycle()
-    val useCustomConnection by viewModel.sendspinUseCustomConnection.collectAsStateWithLifecycle()
-    val port by viewModel.sendspinPort.collectAsStateWithLifecycle()
-    val path by viewModel.sendspinPath.collectAsStateWithLifecycle()
-    val codecPreference by viewModel.sendspinCodecPreference.collectAsStateWithLifecycle()
-    val bufferCapacityMb by viewModel.sendspinBufferCapacityMb.collectAsStateWithLifecycle()
-    val host by viewModel.sendspinHost.collectAsStateWithLifecycle()
-    val useTls by viewModel.sendspinUseTls.collectAsStateWithLifecycle()
-
-    val savedSettings = SendspinPlayerSettings(
-        name = deviceName,
-        bufferCapacityMb = bufferCapacityMb,
-        codecPreference = codecPreference,
-        connectionOverride = if (useCustomConnection) {
-            SendspinConnectionSettings(
-                enabled = useCustomConnection,
-                tls = useTls,
-                host = host,
-                port = port,
-                path = path,
-            )
-        } else {
-            SendspinConnectionSettings.defaults
-        },
-    )
+fun SendspinSettingsManager(
+    sendspinEnabled: Boolean,
+    sendspinPlayerSettings: SendspinPlayerSettings,
+    setSendspinEnabled: (Boolean) -> Unit,
+    setSendspinPlayerSettings: (SendspinPlayerSettings) -> Unit,
+) {
 
     // TODO: add debounce for changing settings
 
     val updateSetting = { settings: SendspinPlayerSettings ->
-        if (deviceName != settings.name) viewModel.setSendspinDeviceName(settings.name ?: platformDeviceName())
-        if (bufferCapacityMb != settings.bufferCapacityMb) {
-            viewModel.setSendspinBufferCapacityMb(
-                settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT,
-            )
-        }
-        if (codecPreference != settings.codecPreference) {
-            viewModel.setSendspinCodecPreference(
-                settings.codecPreference ?: AudioCodec.OPUS,
-            )
-        }
-        if (useCustomConnection != settings.connectionOverride.enabled) {
-            viewModel.setSendspinUseCustomConnection(
-                settings.connectionOverride.enabled,
-            )
-        }
-        if (useTls != settings.connectionOverride.tls) {
-            viewModel.setSendspinUseTls(
-                settings.connectionOverride.tls,
-            )
-        }
-        if (host != settings.connectionOverride.host) {
-            viewModel.setSendspinHost(
-                settings.connectionOverride.host ?: "",
-            )
-        }
-        if (port != settings.connectionOverride.port) {
-            viewModel.setSendspinPort(
-                settings.connectionOverride.port ?: 8097,
-            )
-        }
-        if (path != settings.connectionOverride.path) {
-            viewModel.setSendspinPath(
-                settings.connectionOverride.path ?: "",
-            )
-        }
+        setSendspinPlayerSettings(settings)
     }
-    var newSettings by remember(savedSettings) {
+    var newSettings by remember(sendspinPlayerSettings) {
         mutableStateOf(
-            savedSettings.copy(
-                connectionOverride = savedSettings.connectionOverride.copy(),
+            sendspinPlayerSettings.copy(
+                connectionOverride = sendspinPlayerSettings.connectionOverride.copy(),
             ),
         )
     }
@@ -261,16 +178,16 @@ fun SendspinSettingsManager(viewModel: SettingsViewModel) {
                     connectionOverride = newSettings.connectionOverride.copy(),
                 )
                 .apply(updateFunction)
-            if (!enabled) {
+            if (!sendspinEnabled) {
                 commitSettings()
             }
         },
     ) {
         SendspinSection(
-            enabled = enabled,
+            enabled = sendspinEnabled,
             setEnabled = {
                 if (it) commitSettings()
-                viewModel.setSendspinEnabled(it)
+                setSendspinEnabled(it)
             },
         ) {
             ActionButtonsSection(
@@ -278,7 +195,7 @@ fun SendspinSettingsManager(viewModel: SettingsViewModel) {
                 onResetToDefaults = {
                     newSettings = SendspinPlayerSettings.defaults
                 },
-                isSavable = newSettings != savedSettings,
+                isSavable = newSettings != sendspinPlayerSettings,
                 onSaveChanges = {
                     showInterruptionDialog = {
                         commitSettings()
