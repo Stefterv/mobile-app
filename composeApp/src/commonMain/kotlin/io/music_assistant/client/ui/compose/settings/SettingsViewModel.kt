@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -211,19 +212,66 @@ class SettingsViewModel(
     .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = SendspinPlayerSettings(
-            name = settings.sendspinDeviceName.value,
-            bufferCapacityMb = settings.sendspinBufferCapacityMb.value,
-            codecPreference = settings.sendspinCodecPreference.value,
-            connectionOverride = SendspinConnectionSettings(
-                enabled = settings.sendspinUseCustomConnection.value,
-                tls = settings.sendspinUseTls.value,
-                host = settings.sendspinHost.value,
-                port = settings.sendspinPort.value,
-                path = settings.sendspinPath.value,
-            ),
-        ),
+        initialValue = currentSendspinPlayerSettings(),
     )
+
+    private val _sendspinDraftSettings = MutableStateFlow(sendspinPlayerSettings.value.deepCopy())
+    val sendspinDraftSettings: StateFlow<SendspinPlayerSettings> = _sendspinDraftSettings
+
+    val isSendspinSettingsSavable: StateFlow<Boolean> = combine(
+        sendspinDraftSettings,
+        sendspinPlayerSettings,
+    ) { draft, persisted ->
+        draft != persisted
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = false,
+    )
+
+    val isSendspinSettingsResettable: StateFlow<Boolean> = combine(
+        sendspinDraftSettings,
+        sendspinPlayerSettings,
+    ) { draft, _ ->
+        draft != defaultSendspinPlayerSettings()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = sendspinDraftSettings.value != defaultSendspinPlayerSettings(),
+    )
+
+    init {
+        viewModelScope.launch {
+            sendspinPlayerSettings.collectLatest { persistedSettings ->
+                _sendspinDraftSettings.value = persistedSettings.deepCopy()
+            }
+        }
+    }
+
+    fun setSendspinEnabledWithDraftCommit(enabled: Boolean) {
+        if (enabled) {
+            commitSendspinDraftSettings()
+        }
+        setSendspinEnabled(enabled)
+    }
+
+    fun updateSendspinDraftSettings(updateFunction: SendspinPlayerSettings.() -> Unit) {
+        _sendspinDraftSettings.value = _sendspinDraftSettings.value
+            .deepCopy()
+            .apply(updateFunction)
+
+        if (!sendspinEnabled.value) {
+            commitSendspinDraftSettings()
+        }
+    }
+
+    fun resetSendspinDraftSettings() {
+        _sendspinDraftSettings.value = defaultSendspinPlayerSettings()
+    }
+
+    fun commitSendspinDraftSettings() {
+        setSendspinPlayerSettings(_sendspinDraftSettings.value)
+    }
 
     fun setSendspinPlayerSettings(playerSettings: SendspinPlayerSettings) {
         settings.setSendspinDeviceName(playerSettings.name ?: SettingsRepository.DEVICE_NAME)
@@ -273,6 +321,21 @@ class SettingsViewModel(
     val localNetworkOnboardingShown = settings.localNetworkOnboardingShown
 
     fun dismissLocalNetworkOnboarding() = settings.setLocalNetworkOnboardingShown()
+
+    private fun currentSendspinPlayerSettings() = SendspinPlayerSettings(
+        name = settings.sendspinDeviceName.value,
+        bufferCapacityMb = settings.sendspinBufferCapacityMb.value,
+        codecPreference = settings.sendspinCodecPreference.value,
+        connectionOverride = SendspinConnectionSettings(
+            enabled = settings.sendspinUseCustomConnection.value,
+            tls = settings.sendspinUseTls.value,
+            host = settings.sendspinHost.value,
+            port = settings.sendspinPort.value,
+            path = settings.sendspinPath.value,
+        ),
+    )
+
+    private fun defaultSendspinPlayerSettings() = SendspinPlayerSettings.defaults.deepCopy()
 }
 
 data class SendspinPlayerSettings(
@@ -290,6 +353,10 @@ data class SendspinPlayerSettings(
         )
     }
 }
+
+private fun SendspinPlayerSettings.deepCopy() = copy(
+    connectionOverride = connectionOverride.copy(),
+)
 
 data class SendspinConnectionSettings(
     var enabled: Boolean = false,

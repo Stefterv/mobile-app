@@ -151,7 +151,9 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
     val dataConnection = (sessionState as? SessionState.Connected)?.dataConnectionState
     val isAuthenticated = dataConnection is DataConnectionState.Authenticated
     val sendspinEnabled by viewModel.sendspinEnabled.collectAsStateWithLifecycle()
-    val sendspinPlayerSettings by viewModel.sendspinPlayerSettings.collectAsStateWithLifecycle()
+    val sendspinPlayerSettings by viewModel.sendspinDraftSettings.collectAsStateWithLifecycle()
+    val isSendspinSettingsSavable by viewModel.isSendspinSettingsSavable.collectAsStateWithLifecycle()
+    val isSendspinSettingsResettable by viewModel.isSendspinSettingsResettable.collectAsStateWithLifecycle()
     val hasCrashLog by viewModel.hasCrashLog.collectAsStateWithLifecycle()
     val isPreparingShare by viewModel.isPreparingShare.collectAsStateWithLifecycle()
     val localNetworkOnboardingShown by viewModel.localNetworkOnboardingShown
@@ -354,8 +356,12 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                                 SendspinSettingsManager(
                                     sendspinEnabled = sendspinEnabled,
                                     sendspinPlayerSettings = sendspinPlayerSettings,
-                                    setSendspinEnabled = { viewModel.setSendspinEnabled(it) },
-                                    setSendspinPlayerSettings = { viewModel.setSendspinPlayerSettings(it) },
+                                    updateSendspinPlayerSettings = { viewModel.updateSendspinDraftSettings(it) },
+                                    setSendspinEnabled = { viewModel.setSendspinEnabledWithDraftCommit(it) },
+                                    resetSendspinPlayerSettings = { viewModel.resetSendspinDraftSettings() },
+                                    commitSendspinPlayerSettings = { viewModel.commitSendspinDraftSettings() },
+                                    isSendspinSettingsSavable = isSendspinSettingsSavable,
+                                    isSendspinSettingsResettable = isSendspinSettingsResettable,
                                 )
 
                                 // Car options route to the local player — only meaningful when

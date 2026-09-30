@@ -99,22 +99,13 @@ private typealias UpdateSendspinSettings = (SendspinPlayerSettings.() -> Unit) -
 fun SendspinSettingsManager(
     sendspinEnabled: Boolean,
     sendspinPlayerSettings: SendspinPlayerSettings,
+    updateSendspinPlayerSettings: UpdateSendspinSettings,
     setSendspinEnabled: (Boolean) -> Unit,
-    setSendspinPlayerSettings: (SendspinPlayerSettings) -> Unit,
+    resetSendspinPlayerSettings: () -> Unit,
+    commitSendspinPlayerSettings: () -> Unit,
+    isSendspinSettingsSavable: Boolean,
+    isSendspinSettingsResettable: Boolean,
 ) {
-    // TODO: add debounce for changing settings
-
-    val updateSetting = { settings: SendspinPlayerSettings ->
-        setSendspinPlayerSettings(settings)
-    }
-    var newSettings by remember(sendspinPlayerSettings) {
-        mutableStateOf(
-            sendspinPlayerSettings.copy(
-                connectionOverride = sendspinPlayerSettings.connectionOverride.copy(),
-            ),
-        )
-    }
-    val commitSettings = { updateSetting(newSettings) }
     var showInterruptionDialog by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     if (showInterruptionDialog != null) {
@@ -162,35 +153,19 @@ fun SendspinSettingsManager(
         }
     }
 
-    val updateSettings: UpdateSendspinSettings = { updateFunction ->
-        newSettings = newSettings
-            .copy(
-                connectionOverride = newSettings.connectionOverride.copy(),
-            )
-            .apply(updateFunction)
-        if (!sendspinEnabled) {
-            commitSettings()
-        }
-    }
-
     SendspinSection(
         enabled = sendspinEnabled,
-        settings = newSettings,
-        updateSettings = updateSettings,
-        setEnabled = {
-            if (it) commitSettings()
-            setSendspinEnabled(it)
-        },
+        settings = sendspinPlayerSettings,
+        updateSettings = updateSendspinPlayerSettings,
+        setEnabled = setSendspinEnabled,
     ) {
         ActionButtonsSection(
-            isResettable = newSettings != SendspinPlayerSettings.defaults,
-            onResetToDefaults = {
-                newSettings = SendspinPlayerSettings.defaults
-            },
-            isSavable = newSettings != sendspinPlayerSettings,
+            isResettable = isSendspinSettingsResettable,
+            onResetToDefaults = resetSendspinPlayerSettings,
+            isSavable = isSendspinSettingsSavable,
             onSaveChanges = {
                 showInterruptionDialog = {
-                    commitSettings()
+                    commitSendspinPlayerSettings()
                 }
             },
         )
