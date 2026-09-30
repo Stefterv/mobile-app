@@ -450,7 +450,7 @@ class SettingsRepository(
     }
 
     private val _sendspinDeviceName = MutableStateFlow(
-        settings.getStringOrNull("sendspin_device_name") ?: platformDeviceName(),
+        settings.getStringOrNull("sendspin_device_name") ?: platformDeviceName,
     )
     val sendspinDeviceName = _sendspinDeviceName.asStateFlow()
 

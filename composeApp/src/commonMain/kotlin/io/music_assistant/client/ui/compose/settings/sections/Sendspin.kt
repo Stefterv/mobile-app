@@ -260,13 +260,13 @@ private fun DeviceNameSection(
     updateSettings: UpdateSendspinSettings,
 ) {
     val focusManager = LocalFocusManager.current
-    val platformDeviceName = remember { platformDeviceName() }
+    val defaultDeviceName = remember { platformDeviceName }
 
     OutlinedTextField(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        value = settings.name ?: platformDeviceName,
+        value = settings.name ?: defaultDeviceName,
         onValueChange = { name ->
             updateSettings {
                 this.name = name
@@ -277,11 +277,11 @@ private fun DeviceNameSection(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         trailingIcon = {
-            if (settings.name != platformDeviceName) {
+            if (settings.name != defaultDeviceName) {
                 Icon(
                     imageVector = Icons.Default.Clear,
                     contentDescription = stringResource(Res.string.settings_local_player_clear_name),
-                    modifier = Modifier.clickable { updateSettings { this.name = platformDeviceName } },
+                    modifier = Modifier.clickable { updateSettings { this.name = defaultDeviceName } },
                 )
             }
         },

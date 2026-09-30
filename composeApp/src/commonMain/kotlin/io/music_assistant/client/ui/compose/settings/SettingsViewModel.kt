@@ -227,7 +227,7 @@ class SettingsViewModel(
     )
 
     fun setSendspinPlayerSettings(playerSettings: SendspinPlayerSettings) {
-        settings.setSendspinDeviceName(playerSettings.name ?: platformDeviceName())
+        settings.setSendspinDeviceName(playerSettings.name ?: platformDeviceName)
         settings.setSendspinBufferCapacityMb(playerSettings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT)
         settings.setSendspinCodecPreference(playerSettings.codecPreference ?: AudioCodec.OPUS)
         settings.setSendspinUseCustomConnection(playerSettings.connectionOverride.enabled)
@@ -284,7 +284,7 @@ data class SendspinPlayerSettings(
 ) {
     companion object {
         val defaults = SendspinPlayerSettings(
-            name = platformDeviceName(),
+            name = platformDeviceName,
             bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
             codecPreference = AudioCodec.OPUS,
             connectionOverride = SendspinConnectionSettings(),
