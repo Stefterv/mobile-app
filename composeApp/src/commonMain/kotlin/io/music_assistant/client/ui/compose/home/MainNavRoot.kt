@@ -302,6 +302,7 @@ fun MainNavigationRoot(
                                     homeScreenViewModel = homeScreenViewModel,
                                     actionsViewModel = playerActionsViewModel,
                                     dspSettingsViewModel = dspSettingsViewModel,
+                                    providerViewModel = providerViewModel,
                                     expanded = expanded,
                                     onClose = { playerExpanded = false },
                                     contentPadding = contentPadding,
