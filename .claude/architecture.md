@@ -70,6 +70,16 @@ actual class PlatformFeature {
 - **In-list filter**: `List.clientFiltered(query)` (`model/client/QueryFilter.kt`) filters loaded
   items on the client. Derive the visible list as raw → filter → sort in one place.
 
+## HTTP Clients
+
+- Get every `HttpClient` from the Koin `HttpClientFactory`. Do not call `HttpClient(engine)` directly.
+- Android (`AndroidHttpClientFactory`): OkHttp with the KeyChain client certificate that the user selected
+  (`SettingsRepository.clientCertificateAlias`), for mTLS. Trust stays the platform default, so the network
+  security config applies. All clients share one connection pool. A certificate change evicts that pool.
+- iOS (`IosHttpClientFactory`): Darwin. `handleChallenge` answers a client-certificate challenge with the identity
+  in `KeychainClientIdentity`, only while `clientCertificateAlias` is set. The Darwin engine owns its session pool,
+  so `KtorServiceClient` makes a new client when the certificate changes.
+
 ## Artwork Loading
 
 - **`ArtworkRepository`**: Single owner of artwork fetching, disk caching, freshness, and concurrent-request deduplication. Shared by all platforms.

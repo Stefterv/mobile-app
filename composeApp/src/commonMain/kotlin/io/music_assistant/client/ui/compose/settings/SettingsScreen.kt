@@ -615,6 +615,7 @@ private fun ConnectionMethodTabs(
     val selectedTab = if (preferredMethod == "webrtc") 1 else 0
     val webrtcRemoteId by viewModel.webrtcRemoteId.collectAsStateWithLifecycle()
     var showHistoryDialog by remember { mutableStateOf(false) }
+    val clientCertificateAlias by viewModel.clientCertificateAlias.collectAsStateWithLifecycle()
 
     val directHasToken = port.toIntOrNull()
         ?.let {
@@ -678,6 +679,8 @@ private fun ConnectionMethodTabs(
                     onConnect = onDirectConnect,
                     enabled = directConnectEnabled,
                     onShowHistory = { showHistoryDialog = true },
+                    clientCertificateAlias = clientCertificateAlias,
+                    onClientCertificateAliasChange = viewModel::setClientCertificateAlias,
                 )
             }
 
@@ -752,6 +755,8 @@ private fun DirectConnectionContent(
     onConnect: () -> Unit,
     enabled: Boolean,
     onShowHistory: () -> Unit,
+    clientCertificateAlias: String?,
+    onClientCertificateAliasChange: (String?) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -830,6 +835,15 @@ private fun DirectConnectionContent(
             onCheckedChange = onTlsChange,
         )
         Text(stringResource(Res.string.settings_use_tls))
+    }
+
+    if (isTls) {
+        ClientCertificateSetting(
+            host = ipAddress.ifBlank { Defaults.URI },
+            port = port.toIntOrNull() ?: -1,
+            alias = clientCertificateAlias,
+            onAliasChange = onClientCertificateAliasChange,
+        )
     }
 
     // Live preview of the address the app will actually contact.
