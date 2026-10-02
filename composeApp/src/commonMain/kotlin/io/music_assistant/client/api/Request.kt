@@ -174,6 +174,19 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
                 put("player_id", JsonPrimitive(playerId))
             },
         )
+
+        /**
+         * Resolves [playerId]'s current on-air stream title to a library item and
+         * favourites it. Add-only: the queue's `favorite` flag belongs to the station,
+         * not the song, so there is no matching "remove" call. Raises server-side when
+         * the player has no stream title or the title can't be resolved to an item.
+         */
+        fun addCurrentlyPlayingToFavorites(playerId: String) = Request(
+            command = APICommands.PLAYERS_ADD_CURRENTLY_PLAYING_TO_FAVORITES,
+            args = buildJsonObject {
+                put("player_id", JsonPrimitive(playerId))
+            },
+        )
     }
 
     data object Queue {
@@ -181,7 +194,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
 
         fun items(
             queueId: String,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
         ) = Request(
             command = APICommands.PLAYER_QUEUES_ITEMS,
@@ -327,7 +340,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun listLibrary(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             providers: List<String>? = null,
@@ -395,7 +408,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun listLibrary(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             providers: List<String>? = null,
@@ -446,7 +459,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun listLibrary(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             providers: List<String>? = null,
@@ -473,7 +486,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun listLibrary(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             providers: List<String>? = null,
@@ -500,7 +513,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun listLibrary(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             providers: List<String>? = null,
@@ -545,7 +558,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun listLibrary(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             albumArtistsOnly: Boolean = false,
@@ -621,7 +634,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun listLibrary(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             albumTypes: List<String>? = null,
@@ -660,7 +673,7 @@ data class Request @OptIn(ExperimentalUuidApi::class) constructor(
         fun list(
             favorite: Boolean? = null,
             search: String? = null,
-            limit: Int = Int.MAX_VALUE,
+            limit: Int = SERVER_PAGE_SIZE,
             offset: Int = 0,
             orderBy: String? = null,
             providers: List<String>? = null,

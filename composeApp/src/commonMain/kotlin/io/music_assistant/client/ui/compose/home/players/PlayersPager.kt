@@ -52,6 +52,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,6 +74,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
+import io.music_assistant.client.data.hasFavoritableStreamTrack
 import io.music_assistant.client.data.model.client.AppMediaItemFixtures
 import io.music_assistant.client.data.model.client.PlayerData
 import io.music_assistant.client.data.model.client.PlayerDataFixtures
@@ -91,6 +93,7 @@ import io.music_assistant.client.ui.compose.common.OverflowMenuDivider
 import io.music_assistant.client.ui.compose.common.OverflowMenuEntry
 import io.music_assistant.client.ui.compose.common.OverflowMenuOption
 import io.music_assistant.client.ui.compose.common.PlayerColors
+import io.music_assistant.client.ui.compose.common.ToastState
 import io.music_assistant.client.ui.compose.common.action.PlayerAction
 import io.music_assistant.client.ui.compose.common.action.QueueAction
 import io.music_assistant.client.ui.compose.common.bufferIndicatorMenuOption
@@ -106,6 +109,7 @@ import io.music_assistant.client.ui.compose.home.CollapsibleQueue
 import io.music_assistant.client.ui.compose.home.HomeScreenViewModel
 import io.music_assistant.client.ui.compose.home.HorizontalPagerIndicator
 import io.music_assistant.client.ui.compose.home.Queue
+import io.music_assistant.client.ui.compose.provider.ProviderViewModel
 import io.music_assistant.client.ui.inactive
 import io.music_assistant.client.utils.WindowClass
 import io.music_assistant.client.utils.conditional
@@ -143,11 +147,16 @@ fun PlayersPager(
     homeScreenViewModel: HomeScreenViewModel,
     actionsViewModel: ActionsViewModel,
     dspSettingsViewModel: DspSettingsViewModel,
+    providerViewModel: ProviderViewModel,
     expanded: Boolean,
     onClose: () -> Unit,
     contentPadding: PaddingValues,
+    toastState: ToastState,
     navigateToItem: (AppMediaItem) -> Unit,
 ) {
+    LaunchedEffect(actionsViewModel, toastState) {
+        actionsViewModel.toasts.collect { toastState.showToast(it) }
+    }
     if (state is HomeScreenViewModel.PlayersState.Data && state.playerData.isNotEmpty()) {
         val moveToPlayer: (String) -> Unit = { id: String ->
             state.playerData.find { it.player.id == id }
@@ -159,6 +168,8 @@ fun PlayersPager(
         // Server-synced audiobook_chapter_progress preference; gates the
         // chapter-relative timeline in FullPlayerItem.
         val chapterProgressEnabled by homeScreenViewModel.chapterProgressEnabled
+            .collectAsStateWithLifecycle()
+        val streamFavoriteSupported by actionsViewModel.streamFavoriteSupported
             .collectAsStateWithLifecycle()
         // Sleep timers are a server-side feature from schema 35 on; below that the
         // menu entry and the badge stay hidden entirely.
@@ -187,11 +198,17 @@ fun PlayersPager(
         PlayerDialogHost(
             request = dialogRequest,
             players = playerDataList,
+            allPlayers = state.allPlayerData,
             homeScreenViewModel = homeScreenViewModel,
             dspSettingsViewModel = dspSettingsViewModel,
+            providerViewModel = providerViewModel,
             playlistActions = actionsViewModel,
             canLeaveGroup = leaderLeaveSupported,
             onMoveToPlayer = moveToPlayer,
+            onNavigateToItem = {
+                navigateToItem(it)
+                onClose()
+            },
             onDismiss = { dialogRequest = null },
         )
 
@@ -258,6 +275,11 @@ fun PlayersPager(
                 val onLyricsClick: () -> Unit = remember(playerId, trackId) {
                     {
                         trackId?.let { dialogRequest = PlayerDialogRequest.Lyrics(playerId, it) }
+                    }
+                }
+                val onChooseArtist: () -> Unit = remember(playerId, trackId) {
+                    {
+                        trackId?.let { dialogRequest = PlayerDialogRequest.ChooseArtist(playerId, it) }
                     }
                 }
                 val onAudioChainClick: () -> Unit = remember(playerId, queueItemId) {
@@ -339,6 +361,10 @@ fun PlayersPager(
                                 onFavoriteClick = {
                                     actionsViewModel.onFavoriteClick(it)
                                 },
+                                onFavoriteStreamClick = {
+                                    actionsViewModel.onFavoriteStreamClick(it)
+                                },
+                                canFavoriteStream = streamFavoriteSupported && player.hasFavoritableStreamTrack(),
                                 onClose = onClose,
                                 queueAction = { homeScreenViewModel.queueAction(it) },
                                 allPlayers = playerDataList,
@@ -356,6 +382,7 @@ fun PlayersPager(
                                 onLyricsClick = onLyricsClick,
                                 onAudioChainClick = onAudioChainClick,
                                 onPlaybackSpeedClick = onPlaybackSpeedClick,
+                                onChooseArtist = onChooseArtist,
                                 chapterProgressEnabled = chapterProgressEnabled,
                             )
                         }
@@ -430,6 +457,8 @@ private fun ExpandedPlayerPage(
     playerAction: (PlayerData, PlayerAction) -> Unit,
     onAddToPlaylist: ((AppMediaItem) -> Unit)? = null,
     onFavoriteClick: (AppMediaItem) -> Unit,
+    onFavoriteStreamClick: (PlayerData) -> Unit = {},
+    canFavoriteStream: Boolean = false,
     onClose: () -> Unit,
     queueAction: (QueueAction) -> Unit,
     allPlayers: List<PlayerData>,
@@ -441,6 +470,7 @@ private fun ExpandedPlayerPage(
     contentPadding: PaddingValues,
     isCurrentPage: Boolean,
     navigateToItem: (AppMediaItem) -> Unit = {},
+    onChooseArtist: () -> Unit = {},
     livePositionFlow: Flow<Double>?,
     bufferedAheadSecFlow: Flow<Double>? = null,
     lyricsAvailable: Boolean = false,
@@ -454,6 +484,13 @@ private fun ExpandedPlayerPage(
     // then split the width 2:1, so the layout degrades smoothly from a large
     // tablet down to a phone in landscape.
     val showSideQueue = WindowClass.isWide()
+    // Navigating away from the player collapses it, so the target screen is visible.
+    val navigateAndClose: (AppMediaItem) -> Unit = remember(navigateToItem, onClose) {
+        {
+            navigateToItem(it)
+            onClose()
+        }
+    }
     val dismissThresholdPx = with(LocalDensity.current) { 120.dp.toPx() }
     // Minimum gesture speed (px/s) to count as a fling rather than a slow drag.
     val minFlingVelocityPx = with(LocalDensity.current) { 1000.dp.toPx() }
@@ -497,10 +534,7 @@ private fun ExpandedPlayerPage(
                     allPlayers = allPlayers,
                     playerAction = { playerAction(player, it) },
                     queueAction = queueAction,
-                    navigateToItem = {
-                        navigateToItem(it)
-                        onClose()
-                    },
+                    navigateToItem = navigateAndClose,
                     onPlayerSelected = { moveToPlayer(it) },
                     onOpenDsp = onDspButton,
                     onAddToPlaylist = onAddToPlaylist,
@@ -618,6 +652,8 @@ private fun ExpandedPlayerPage(
                             colors = colors,
                             playerAction = playerAction,
                             onFavoriteClick = onFavoriteClick,
+                            onFavoriteStreamClick = onFavoriteStreamClick,
+                            canFavoriteStream = canFavoriteStream,
                             lyricsAvailable = lyricsAvailable,
                             onLyricsClick = onLyricsClick,
                             onAudioChainClick = onAudioChainClick,
@@ -625,6 +661,8 @@ private fun ExpandedPlayerPage(
                             livePositionFlow = livePositionFlow,
                             bufferedAheadSecFlow = bufferedAheadSecFlow,
                             chapterProgressEnabled = chapterProgressEnabled,
+                            navigateToItem = navigateAndClose,
+                            onChooseArtist = onChooseArtist,
                         )
                     }
                 }
