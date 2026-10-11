@@ -60,8 +60,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.ui.compose.common.localizedTitle
+import io.music_assistant.client.ui.compose.settings.SendspinConnectionSettings
 import io.music_assistant.client.ui.compose.settings.SendspinPlayerSettings
-import io.music_assistant.sendspin.api.AudioCodec
 import musicassistantclient.composeapp.generated.resources.Res
 import musicassistantclient.composeapp.generated.resources.button_cancel
 import musicassistantclient.composeapp.generated.resources.button_confirm
@@ -172,15 +172,9 @@ fun SendspinSettingsManager(
     }
 }
 
-private fun SendspinPlayerSettings.hasNonDefaultAdvancedSettings(): Boolean {
-    val connectionSettings = connectionOverride
-    return bufferCapacityMb != SettingsRepository.BUFFER_MB_DEFAULT ||
-        connectionSettings.enabled ||
-        connectionSettings.tls ||
-        !connectionSettings.host.isNullOrEmpty() ||
-        connectionSettings.port != null && connectionSettings.port != 0 ||
-        !connectionSettings.path.isNullOrEmpty()
-}
+private fun SendspinPlayerSettings.hasNonDefaultAdvancedSettings(): Boolean =
+    bufferCapacityMb != SendspinPlayerSettings.defaults.bufferCapacityMb ||
+        connectionOverride != SendspinConnectionSettings.defaults
 
 @Composable
 fun SendspinSection(
@@ -251,7 +245,7 @@ private fun DeviceNameSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        value = settings.name ?: defaultDeviceName,
+        value = settings.name,
         onValueChange = { name ->
             updateSettings {
                 this.name = name
@@ -304,7 +298,7 @@ private fun CodecPreferenceSection(
             }
         }
         Text(
-            text = (settings.codecPreference ?: AudioCodec.OPUS)
+            text = settings.codecPreference
                 .localizedTitle()
                 .substringAfter(" ")
                 .replace("(", "")
@@ -475,7 +469,7 @@ private fun ConnectionFieldsSection(
                 .onFocusChanged { isHostFocused = it.isFocused }
                 .weight(if (isPortFocused || isPathFocused) 1f else 2f)
                 .padding(bottom = 12.dp),
-            value = settings.connectionOverride.host ?: "",
+            value = settings.connectionOverride.host,
             onValueChange = { host -> updateSettings { connectionOverride.host = host } },
             label = {
                 Text(
@@ -505,7 +499,7 @@ private fun ConnectionFieldsSection(
                 .onFocusChanged { isPortFocused = it.isFocused }
                 .weight(if (isPortFocused) 2f else 1f)
                 .padding(bottom = 12.dp),
-            value = settings.connectionOverride.port?.toString() ?: "",
+            value = settings.connectionOverride.port.toString(),
             onValueChange = { it.toIntOrNull()?.let { port -> updateSettings { connectionOverride.port = port } } },
             label = {
                 Text(
@@ -538,7 +532,7 @@ private fun ConnectionFieldsSection(
                 .onFocusChanged { isPathFocused = it.isFocused }
                 .weight(if (isPathFocused) 2f else 1f)
                 .padding(bottom = 12.dp),
-            value = settings.connectionOverride.path ?: "",
+            value = settings.connectionOverride.path,
             onValueChange = { path -> updateSettings { connectionOverride.path = path } },
             placeholder = {
                 Text(
@@ -583,14 +577,14 @@ private fun BufferSizeSection(
             Text(
                 text = stringResource(
                     Res.string.settings_buffer_size_value,
-                    settings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT,
+                    settings.bufferCapacityMb,
                 ),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
         Slider(
-            value = settings.bufferCapacityMb?.toFloat() ?: SettingsRepository.BUFFER_MB_DEFAULT.toFloat(),
+            value = settings.bufferCapacityMb.toFloat(),
             onValueChange = { updateSettings { bufferCapacityMb = it.roundToInt() } },
             valueRange = SettingsRepository.BUFFER_MB_MIN.toFloat()..SettingsRepository.BUFFER_MB_MAX.toFloat(),
             steps = (SettingsRepository.BUFFER_MB_MAX - SettingsRepository.BUFFER_MB_MIN) /

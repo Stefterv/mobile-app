@@ -276,14 +276,14 @@ class SettingsViewModel(
     }
 
     fun setSendspinPlayerSettings(playerSettings: SendspinPlayerSettings) {
-        settings.setSendspinDeviceName(playerSettings.name ?: SettingsRepository.DEVICE_NAME)
-        settings.setSendspinBufferCapacityMb(playerSettings.bufferCapacityMb ?: SettingsRepository.BUFFER_MB_DEFAULT)
-        settings.setSendspinCodecPreference(playerSettings.codecPreference ?: AudioCodec.OPUS)
+        settings.setSendspinDeviceName(playerSettings.name)
+        settings.setSendspinBufferCapacityMb(playerSettings.bufferCapacityMb)
+        settings.setSendspinCodecPreference(playerSettings.codecPreference)
         settings.setSendspinUseCustomConnection(playerSettings.connectionOverride.enabled)
         settings.setSendspinUseTls(playerSettings.connectionOverride.tls)
-        settings.setSendspinHost(playerSettings.connectionOverride.host ?: "")
-        settings.setSendspinPort(playerSettings.connectionOverride.port ?: 0)
-        settings.setSendspinPath(playerSettings.connectionOverride.path ?: "")
+        settings.setSendspinHost(playerSettings.connectionOverride.host)
+        settings.setSendspinPort(playerSettings.connectionOverride.port)
+        settings.setSendspinPath(playerSettings.connectionOverride.path)
     }
 
     // Connection method preference
@@ -345,16 +345,16 @@ class SettingsViewModel(
 }
 
 data class SendspinPlayerSettings(
-    var name: String?,
-    var bufferCapacityMb: Int?,
-    var codecPreference: AudioCodec?,
+    var name: String,
+    var bufferCapacityMb: Int,
+    var codecPreference: AudioCodec,
     var connectionOverride: SendspinConnectionSettings,
 ) {
     companion object {
         val defaults = SendspinPlayerSettings(
             name = SettingsRepository.DEVICE_NAME,
             bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
-            codecPreference = AudioCodec.OPUS,
+            codecPreference = SettingsRepository.DEFAULT_CODEC,
             connectionOverride = SendspinConnectionSettings(),
         )
     }
@@ -367,9 +367,9 @@ private fun SendspinPlayerSettings.deepCopy() = copy(
 data class SendspinConnectionSettings(
     var enabled: Boolean = false,
     var tls: Boolean = false,
-    var host: String? = null,
-    var port: Int? = null,
-    var path: String? = null,
+    var host: String = "",
+    var port: Int = SettingsRepository.DEFAULT_SENDSPIN_PORT,
+    var path: String = SettingsRepository.DEFAULT_SENDSPIN_PATH,
 ) {
     companion object {
         val defaults = SendspinConnectionSettings()

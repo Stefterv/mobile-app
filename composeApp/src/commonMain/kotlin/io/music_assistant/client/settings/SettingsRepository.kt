@@ -459,7 +459,7 @@ class SettingsRepository(
     }
 
     private val _sendspinPort = MutableStateFlow(
-        settings.getInt("sendspin_port", 8095),
+        settings.getInt("sendspin_port", DEFAULT_SENDSPIN_PORT),
     )
     val sendspinPort = _sendspinPort.asStateFlow()
 
@@ -469,7 +469,7 @@ class SettingsRepository(
     }
 
     private val _sendspinPath = MutableStateFlow(
-        settings.getString("sendspin_path", "/sendspin"),
+        settings.getString("sendspin_path", DEFAULT_SENDSPIN_PATH),
     )
     val sendspinPath = _sendspinPath.asStateFlow()
 
@@ -557,7 +557,7 @@ class SettingsRepository(
     private val _sendspinUseCustomConnection = MutableStateFlow(
         settings.getBooleanOrNull("sendspin_use_custom_connection") ?: run {
             val hasCustomHost = secrets.getString("sendspin_host", "").isNotEmpty()
-            val hasCustomPort = settings.getInt("sendspin_port", 8095) != 8095
+            val hasCustomPort = settings.getInt("sendspin_port", DEFAULT_SENDSPIN_PORT) != DEFAULT_SENDSPIN_PORT
             val useCustom = hasCustomHost || hasCustomPort
             settings.putBoolean("sendspin_use_custom_connection", useCustom)
             useCustom
@@ -823,6 +823,8 @@ class SettingsRepository(
         val CODECS: List<AudioCodec> = listOf(AudioCodec.OPUS, AudioCodec.FLAC, AudioCodec.PCM)
         val DEFAULT_CODEC: AudioCodec = AudioCodec.OPUS
         const val DEVICE_NAME: String = "My Phone"
+        const val DEFAULT_SENDSPIN_PORT: Int = 8095
+        const val DEFAULT_SENDSPIN_PATH: String = "/sendspin"
 
         // Advertised to the server in client/hello as `buffer_capacity`: a hard per-player
         // limit in BYTES on queued audio, uniform across codecs. User slider limits, in MB.
