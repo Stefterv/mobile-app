@@ -44,6 +44,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -460,6 +461,13 @@ private fun ConnectionFieldsSection(
     var isPortFocused by remember { mutableStateOf(false) }
     var isPathFocused by remember { mutableStateOf(false) }
 
+    // Raw text so the field can be cleared while editing; empty means the default port.
+    val port = settings.connectionOverride.port
+    var portText by remember { mutableStateOf(port.toString()) }
+    LaunchedEffect(port) {
+        if (portText.toPortOrDefault() != port) portText = port.toString()
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -499,8 +507,13 @@ private fun ConnectionFieldsSection(
                 .onFocusChanged { isPortFocused = it.isFocused }
                 .weight(if (isPortFocused) 2f else 1f)
                 .padding(bottom = 12.dp),
-            value = settings.connectionOverride.port.toString(),
-            onValueChange = { it.toIntOrNull()?.let { port -> updateSettings { connectionOverride.port = port } } },
+            value = portText,
+            onValueChange = { text ->
+                if (text.length <= 5 && text.all { it.isDigit() }) {
+                    portText = text
+                    updateSettings { connectionOverride.port = text.toPortOrDefault() }
+                }
+            },
             label = {
                 Text(
                     text = stringResource(Res.string.settings_port_default),
@@ -557,6 +570,8 @@ private fun ConnectionFieldsSection(
         )
     }
 }
+
+private fun String.toPortOrDefault(): Int = toIntOrNull() ?: SettingsRepository.DEFAULT_SENDSPIN_PORT
 
 @Composable
 private fun BufferSizeSection(
