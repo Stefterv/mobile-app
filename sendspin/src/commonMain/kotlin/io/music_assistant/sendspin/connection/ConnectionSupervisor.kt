@@ -2,8 +2,10 @@ package io.music_assistant.sendspin.connection
 
 import co.touchlab.kermit.Logger
 import io.music_assistant.sendspin.api.Endpoint
+import io.music_assistant.sendspin.api.FailureCause
 import io.music_assistant.sendspin.api.MonotonicClock
 import io.music_assistant.sendspin.identity.SendspinTrustStore
+import io.music_assistant.sendspin.noise.UnsupportedCoreVersionException
 import io.music_assistant.sendspin.noise.crypto.NoiseCrypto
 import io.music_assistant.sendspin.session.Activation
 import io.music_assistant.sendspin.session.NoiseSession
@@ -67,6 +69,15 @@ internal class ConnectionSupervisor(
         goodbyeOnCancel: () -> GoodbyeReason = { GoodbyeReason.Restart },
         companion: suspend CoroutineScope.(NoiseSession) -> Unit,
     ): Unit = coroutineScope {
+        if (endpoint is Endpoint.Unsupported) {
+            logger.e { "Sendspin connection stopped: ${endpoint.reason}" }
+            _state.value = ConnectionState.Failed(FailureCause.IncompatibleProtocol)
+            try {
+                awaitCancellation()
+            } finally {
+                _state.value = ConnectionState.Idle
+            }
+        }
         val silentPairing = SilentPairing(approvePairing, trustStore::pairingToken, this)
         var attempt = 0
         var consecutiveRejections = 0
@@ -170,6 +181,9 @@ internal class ConnectionSupervisor(
                 withTimeoutOrNull(GOODBYE_TIMEOUT_MILLIS) { session.goodbye(goodbyeOnCancel()) }
             }
             throw e
+        } catch (e: UnsupportedCoreVersionException) {
+            logger.e(e) { "Sendspin connection stopped: incompatible protocol" }
+            DropReason.IncompatibleProtocol(e)
         } catch (e: SessionRejected) {
             DropReason.Rejected(e.reason)
         } catch (e: TransportLost) {

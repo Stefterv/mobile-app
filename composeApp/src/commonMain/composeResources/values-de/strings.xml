@@ -273,7 +273,6 @@
   <string name="search_query_label">Suche...</string>
   <string name="search_start">Suche starten</string>
   <string name="search_title">Globale Suche</string>
-  <string name="sendspin_encryption_required_unavailable">Eine verschlüsselte Verbindung ist erforderlich, wird von diesem Server jedoch nicht unterstützt. Aktualisiere Music Assistant oder deaktiviere die entsprechende Einstellung.</string>
   <string name="sendspin_failed_server_rejected">Der Server hat dieses Gerät als Player abgelehnt. Prüfe das Serverprotokoll von Music Assistant.</string>
   <string name="sendspin_failed_setup">Dieses Gerät kann den lokalen Player nicht starten. Sende das App-Protokoll an die Entwickler.</string>
   <string name="sendspin_failed_unauthorized">Der Server hat dieses Gerät nicht als Player akzeptiert. Melde dich erneut an.</string>

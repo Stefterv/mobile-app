@@ -78,10 +78,18 @@ class LocalPlayerEndpoints(
     }
 
     /** The endpoint for a proven session, or null while authentication is still pending. */
-    private fun connected(previous: Endpoint?, state: SessionState.Connected): Endpoint? = when (state) {
-        is SessionState.Connected.WebRTC -> previous as? Endpoint.WebRtc ?: Endpoint.WebRtc(::openFreshChannel)
-        is SessionState.Connected.Direct -> state.authenticatedToken()?.let { token ->
-            Endpoint.WebSocket(webSocketUrl(state), token)
+    private fun connected(previous: Endpoint?, state: SessionState.Connected): Endpoint? {
+        val schema = state.serverInfo?.schemaVersion
+        if (schema != null && schema < MIN_ENCRYPTED_SENDSPIN_SCHEMA) {
+            return Endpoint.Unsupported(
+                "MA server schema $schema does not support encrypted Sendspin; requires schema $MIN_ENCRYPTED_SENDSPIN_SCHEMA",
+            )
+        }
+        return when (state) {
+            is SessionState.Connected.WebRTC -> previous as? Endpoint.WebRtc ?: Endpoint.WebRtc(::openFreshChannel)
+            is SessionState.Connected.Direct -> state.authenticatedToken()?.let { token ->
+                Endpoint.WebSocket(webSocketUrl(state), token)
+            }
         }
     }
 
@@ -119,6 +127,8 @@ class LocalPlayerEndpoints(
     }
 
     private companion object {
+        // First MA schema with complete encrypted Sendspin support, matching the pre-rewrite gate.
+        const val MIN_ENCRYPTED_SENDSPIN_SCHEMA = 45
         const val CHANNEL_TIMEOUT_MILLIS = 30_000L
     }
 }
