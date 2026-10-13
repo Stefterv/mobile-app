@@ -69,20 +69,16 @@ internal class ConnectionSupervisor(
         goodbyeOnCancel: () -> GoodbyeReason = { GoodbyeReason.Restart },
         companion: suspend CoroutineScope.(NoiseSession) -> Unit,
     ): Unit = coroutineScope {
-        if (endpoint is Endpoint.Unsupported) {
-            logger.e { "Sendspin connection stopped: ${endpoint.reason}" }
-            _state.value = ConnectionState.Failed(FailureCause.IncompatibleProtocol)
-            try {
-                awaitCancellation()
-            } finally {
-                _state.value = ConnectionState.Idle
-            }
-        }
         val silentPairing = SilentPairing(approvePairing, trustStore::pairingToken, this)
         var attempt = 0
         var consecutiveRejections = 0
         var lastReason: DropReason = DropReason.ServerClosed
         try {
+            if (endpoint is Endpoint.Unsupported) {
+                logger.e { "Sendspin connection stopped: ${endpoint.reason}" }
+                _state.value = ConnectionState.Failed(FailureCause.IncompatibleProtocol)
+                awaitCancellation()
+            }
             while (true) {
                 if (!online.value) {
                     _state.value = ConnectionState.WaitingForNetwork(attempt, lastReason)

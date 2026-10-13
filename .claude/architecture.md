@@ -160,7 +160,7 @@ The built-in player is the `:sendspin` Gradle module (`io.music_assistant.sendsp
 - `data/LocalPlayerEndpoints` derives the endpoint from the MA session. A WebRTC session gets the data channel. A direct session gets the proxied WebSocket at `<wsUrl>/sendspin`, or the custom Sendspin server from settings. A reconnecting MA session keeps the last endpoint.
 - `player/local/` holds the platform sinks and decoders. Android: `AudioTrackSink` and `AndroidDecoderFactory`. iOS: `AudioQueueSink` and pass-through `IosDecoderFactory` (the native player decodes).
 - The control plane stays on the MA REST API. Sendspin carries audio only (role `player@v1`).
-- Only the Noise-encrypted protocol is supported. Servers that predate it cannot use the local player.
+- Only the Noise-encrypted protocol is supported. `supportsEncryptedSendspin(schemaVersion)` requires MA schema 45 or newer. A known lower schema produces `Endpoint.Unsupported`, and the player fails without opening a transport. A missing schema is inconclusive: endpoint selection permits a handshake rather than rejecting the server. An explicit unsupported wire version also fails terminally; network failures and handshake timeouts still retry.
 
 ### Android Services Integration
 

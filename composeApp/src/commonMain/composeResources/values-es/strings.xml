@@ -285,6 +285,7 @@
   <string name="search_query_label">Buscar…</string>
   <string name="search_start">Empezar a buscar…</string>
   <string name="search_title">Búsqueda global</string>
+  <string name="sendspin_encryption_required_unavailable">Se requiere una conexión cifrada, pero este servidor no la admite. Actualiza Music Assistant o desactiva este requisito.</string>
   <string name="sendspin_failed_server_rejected">El servidor ha rechazado este dispositivo como reproductor. Comprueba el registro del servidor de Music Assistant.</string>
   <string name="sendspin_failed_setup">Este dispositivo no puede iniciar el reproductor local. Envía el registro de la aplicación a los desarrolladores.</string>
   <string name="sendspin_failed_unauthorized">El servidor no ha aceptado este dispositivo como reproductor. Vuelve a iniciar sesión.</string>
