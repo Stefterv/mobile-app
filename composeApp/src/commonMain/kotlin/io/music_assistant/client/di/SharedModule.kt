@@ -45,6 +45,7 @@ import io.music_assistant.client.ui.compose.common.providers.MdiCodepoints
 import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
 import io.music_assistant.client.ui.compose.home.HomeScreenViewModel
 import io.music_assistant.client.ui.compose.home.players.DspSettingsViewModel
+import io.music_assistant.client.ui.compose.home.players.QueueDjViewModel
 import io.music_assistant.client.ui.compose.item.ItemDetailsViewModel
 import io.music_assistant.client.ui.compose.item.ItemListViewModel
 import io.music_assistant.client.ui.compose.item.ViewModeViewModel
@@ -144,7 +145,7 @@ fun sharedModule(
         singleOf(::MediaItemFactory)        // Stateless DTO → domain mapper
         singleOf(::PlayerFactory)           // Stateless DTO → domain mapper
         singleOf(::QueueFactory)            // Stateless DTO → domain mapper (depends on MediaItemFactory)
-        singleOf(::AiRadioRepository)       // Optional ai_radio plugin: list and run stations
+        single { AiRadioRepository(get(), get()) } // Optional ai_radio plugin: list and run stations
         single {                            // Typed and spoken announcements; outlives the dialog
             AnnouncementRepository(
                 apiClient = get(),
@@ -209,6 +210,7 @@ fun sharedModule(
         factory { ViewModeViewModel(get()) }
         factory { params -> ItemListViewModel(params[0], get(), get()) }
         factory { DspSettingsViewModel(get()) }
+        factory { QueueDjViewModel(get(), get<MainDataSource>().aiRadioQueueDjAvailable) }
         factory { HomeScreenViewModel(get(), get(), get(), get(), get()) }
         factory { SearchViewModel(get(), get(), get()) }
         factory { ProviderViewModel(get()) }

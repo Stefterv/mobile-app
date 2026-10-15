@@ -69,6 +69,7 @@ data class OverflowMenuOption(
     // Optional composable leading icon; takes precedence over [icon] for non-vector
     // glyphs (e.g. an MDI font icon via PlayerIcon/MdiIcon).
     val leadingContent: (@Composable () -> Unit)? = null,
+    val enabled: Boolean = true,
     val onClick: () -> Unit,
 ) : OverflowMenuEntry
 
@@ -80,6 +81,7 @@ fun OverflowMenuOption.MenuItem(onClose: () -> Unit) {
             onClick()
             onClose()
         },
+        enabled = enabled,
         leadingIcon = leadingContent ?: icon?.let {
             {
                 Icon(
