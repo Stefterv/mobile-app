@@ -450,6 +450,4 @@
   <string name="dialog_interrupting_playback_message">Saving changes to the player will interrupt the current playback and clear the current queue. Are you sure?</string>
   <string name="button_cancel">Cancel</string>
   <string name="button_confirm">Confirm</string>
-  <string name="toast_favorited_stream_track">Added the on-air song to favorites</string>
-  <string name="toast_error_favorite_stream_track">Could not favorite the on-air song. The server may be unable to resolve its title.</string>
 </resources>
