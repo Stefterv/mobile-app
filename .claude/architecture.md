@@ -64,8 +64,11 @@ actual class PlatformFeature {
 - **Models**: Server DTOs in `model/server/`, domain models in `model/client/`
 - **List payloads**: `library_items` and `player_queues/items` answer in one message and the
   server caps a message at about 9 MB. Never send a huge `limit`. Page with `Request.fetchAllPages`
-  (`api/Paging.kt`) when a caller needs the whole list. `playlist_tracks` is streamed by the
-  server in 500-item `partial` batches that `RpcEngine` reassembles. `library_items` already
+  (`api/Paging.kt`) when a caller needs the whole list. `playlist_tracks` and `podcast_episodes`
+  depend on the server version. Server 2.10 streams the whole list in 500-item `partial` batches
+  that `RpcEngine` reassembles, and it ignores `limit` and `offset`. Server 2.11 answers one
+  500-item page. `MediaItemRepository.fetchAllMediaItems` selects the method from the schema
+  (`SERVER_2_11_SCHEMA`), so load these two lists through it. `library_items` already
   returns slim summary items by default.
 - **Collections**: an audiobook series is `MediaType.COLLECTION` (`MediaCollection`, books in `items`). The
   server returns series rows only when `library_items` gets `collapse_collections`. The Audiobooks top bar sets
