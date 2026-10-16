@@ -2,9 +2,14 @@
 
 package io.music_assistant.client.ui.compose.home
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -44,6 +49,9 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.scene.Scene
+import androidx.navigation3.ui.defaultPopTransitionSpec
+import androidx.navigation3.ui.defaultTransitionSpec
 import androidx.savedstate.serialization.SavedStateConfiguration
 import io.music_assistant.client.api.DeepLinkBus
 import io.music_assistant.client.api.DeepLinkDestination
@@ -54,6 +62,7 @@ import io.music_assistant.client.data.model.client.items.Album
 import io.music_assistant.client.data.model.client.items.Artist
 import io.music_assistant.client.data.model.client.items.Audiobook
 import io.music_assistant.client.data.model.client.items.Genre
+import io.music_assistant.client.data.model.client.items.MediaCollection
 import io.music_assistant.client.data.model.client.items.Playlist
 import io.music_assistant.client.data.model.client.items.Podcast
 import io.music_assistant.client.data.model.client.items.RecommendationFolder
@@ -65,6 +74,7 @@ import io.music_assistant.client.ui.compose.common.rememberToastState
 import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
 import io.music_assistant.client.ui.compose.home.players.DspSettingsViewModel
 import io.music_assistant.client.ui.compose.home.players.PlayersPager
+import io.music_assistant.client.ui.compose.home.players.QueueDjViewModel
 import io.music_assistant.client.ui.compose.item.ItemDetailsScreen
 import io.music_assistant.client.ui.compose.item.ItemDetailsViewModel
 import io.music_assistant.client.ui.compose.item.ItemListScreen
@@ -119,6 +129,7 @@ fun MainNavigationRoot(
     viewModeViewModel: ViewModeViewModel = koinViewModel(),
     dspSettingsViewModel: DspSettingsViewModel = koinViewModel(),
     providerViewModel: ProviderViewModel = koinViewModel(),
+    queueDjViewModel: QueueDjViewModel = koinViewModel(),
     goToSettings: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -306,6 +317,7 @@ fun MainNavigationRoot(
                                     actionsViewModel = playerActionsViewModel,
                                     dspSettingsViewModel = dspSettingsViewModel,
                                     providerViewModel = providerViewModel,
+                                    queueDjViewModel = queueDjViewModel,
                                     expanded = expanded,
                                     onClose = { playerExpanded = false },
                                     contentPadding = contentPadding,
@@ -328,6 +340,18 @@ fun MainNavigationRoot(
                     playerExpanded = !playerExpanded
                 }
 
+                val entryProvider = mainNavEntryProvider(
+                    floatingBarContentPadding,
+                    multiBackStack,
+                    homeScreenViewModel,
+                    actionsViewModel,
+                    viewModeViewModel,
+                    providerViewModel,
+                    homeScreenState,
+                    libraryScreenState,
+                    searchScreenState,
+                )
+                val tabRootKeys = backStacks.map { entryProvider(it.first()).contentKey }
                 ConditionalBackNavDisplay(
                     modifier = Modifier
                         .fillMaxSize()
@@ -337,20 +361,10 @@ fun MainNavigationRoot(
                             rememberSaveableStateHolderNavEntryDecorator(),
                             rememberViewModelStoreNavEntryDecorator(),
                         ),
-                        entries = multiBackStack.toEntries(
-                            mainNavEntryProvider(
-                                floatingBarContentPadding,
-                                multiBackStack,
-                                homeScreenViewModel,
-                                actionsViewModel,
-                                viewModeViewModel,
-                                providerViewModel,
-                                homeScreenState,
-                                libraryScreenState,
-                                searchScreenState,
-                            ),
-                        ),
+                        entries = multiBackStack.toEntries(entryProvider),
                     ),
+                    transitionSpec = tabAwareTransitionSpec(tabRootKeys, defaultTransitionSpec()),
+                    popTransitionSpec = tabAwareTransitionSpec(tabRootKeys, defaultPopTransitionSpec()),
                     onBack = {
                         multiBackStack.removeLastOrNull()
                     },
@@ -360,6 +374,26 @@ fun MainNavigationRoot(
         }
         ToastHost(toastState = toastState)
     }
+}
+
+/**
+ * Switches tabs without animation and uses [inTab] inside one tab. A tab switch is not a push or a
+ * pop, and a quick tab tap that interrupts a slide can leave NavDisplay on a half-drawn scene.
+ */
+private fun tabAwareTransitionSpec(
+    tabRootKeys: List<Any>,
+    inTab: AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform,
+): AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
+    when (initialState.tabIndex(tabRootKeys)) {
+        targetState.tabIndex(tabRootKeys) -> inTab()
+        else -> EnterTransition.None togetherWith ExitTransition.None
+    }
+}
+
+/** The last tab whose root is in this scene's stack, because [MultiBackStack] puts Home first. */
+private fun Scene<NavKey>.tabIndex(tabRootKeys: List<Any>): Int {
+    val stackKeys = (previousEntries + entries).mapTo(HashSet()) { it.contentKey }
+    return tabRootKeys.indexOfLast { it in stackKeys }
 }
 
 @Composable
@@ -392,6 +426,7 @@ private fun mainNavEntryProvider(
                         is Playlist,
                         is Podcast,
                         is Audiobook,
+                        is MediaCollection,
                         is Genre,
                             -> {
                             multiBackStack.add(
@@ -467,6 +502,7 @@ private fun mainNavEntryProvider(
                         is Playlist,
                         is Podcast,
                         is Audiobook,
+                        is MediaCollection,
                         is Genre,
                             -> {
                             multiBackStack.add(
@@ -513,6 +549,7 @@ private fun mainNavEntryProvider(
                         is Playlist,
                         is Podcast,
                         is Audiobook,
+                        is MediaCollection,
                         is Genre,
                         -> multiBackStack.add(
                             MainNav.ItemDetails(
@@ -547,6 +584,7 @@ private fun mainNavEntryProvider(
                         is Playlist,
                         is Podcast,
                         is Audiobook,
+                        is MediaCollection,
                         is Genre,
                             -> {
                             multiBackStack.add(

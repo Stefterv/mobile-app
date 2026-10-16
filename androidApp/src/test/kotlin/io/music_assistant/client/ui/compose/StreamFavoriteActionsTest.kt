@@ -192,7 +192,7 @@ class StreamFavoriteActionsTest {
     private fun protocolRefusal(): Result<Answer> {
         var response: Result<Answer> = Result.failure(IllegalStateException("No response"))
         val engine = RpcEngine(onAuthError = {}, onError = {})
-        engine.registerCallback("stream-request") { response = Result.success(it) }
+        engine.registerCallback("stream-request") { response = it }
         engine.handleResponse(
             Json.parseToJsonElement(
                 """{"message_id":"stream-request","error_code":1,"details":"Stream title could not be resolved"}""",
@@ -218,13 +218,14 @@ class StreamFavoriteActionsTest {
                     toastState = toastState,
                     navigateToItem = {},
                     providerViewModel = getKoin().get(),
+                    queueDjViewModel = getKoin().get(),
                 )
                 ToastHost(toastState)
             }
         }
     }
 
-    private fun viewModel() = ActionsViewModel(client, getKoin().get(), getKoin().get())
+    private fun viewModel() = ActionsViewModel(client, getKoin().get(), getKoin().get(), getKoin().get())
 
     private class StreamClient : ServiceClient by FakeServiceClient() {
         override val sessionState = MutableStateFlow<SessionState>(SessionState.Disconnected.Initial)
