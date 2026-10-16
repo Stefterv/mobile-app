@@ -292,7 +292,7 @@ Columns: Web 2.10, Web 2.11, Phone, AA (Android Auto), CP (CarPlay).
 | Home Assistant OAuth | yes | yes | yes | n/a | n/a | Parity | iOS lacks `ASWebAuthenticationSession` |
 | PKCE return to the app | no | yes | no | n/a | n/a | Missing | `auth/exchange`. Needs Remote Access on the server |
 | Saved token auto-login | yes | yes | yes | n/a | n/a | Parity | |
-| Long-lived token login | yes | yes | no | n/a | n/a | Adjust-partial | `project.md` claims it. No UI exists |
+| Long-lived token login | yes | yes | no | n/a | n/a | Adjust-partial | `project.md` claims it. No UI exists. Decided: add the UI (issue #1202) |
 | Join code login | yes | yes | no | n/a | n/a | Missing | `auth/join_code/exchange` |
 | Logout | yes | yes | yes | n/a | n/a | Parity | |
 | Profile: name, avatar, password, tokens | yes | yes | no | n/a | n/a | Missing | `auth/me`, `auth/user/update`, `auth/tokens` |
@@ -334,6 +334,14 @@ Columns: Web 2.10, Web 2.11, Phone, AA (Android Auto), CP (CarPlay).
 | Reconnect grace | no | yes | yes | yes | yes | Parity | App transports reconnect with backoff |
 
 ## 5. Adjustments for 2.11
+
+Decisions taken on 2026-10-16:
+
+- The app keeps support for server 2.10.
+- The app gates every 2.11 feature on one constant: the schema version of the 2.11 release.
+  The dev branch reports 96 today. Set the constant to the final number when 2.11.0 ships.
+  The app does not support the earlier 2.11 betas.
+- Tracker: issues #1179 to #1213 on `music-assistant/mobile-app` cover sections 5 to 7.
 
 ### 5.1 Playlist tracks and podcast episodes return one page
 
@@ -455,10 +463,11 @@ server logs the device name and software version in a noncompliance warning. If 
 the toggle off, the local player cannot connect. The pairing constants also changed to
 `unpaired_with_input` and `unpaired_without_input`.
 
-Required change: move the `:sendspin` module to spec 1.0.0-rc1. This is a large change. The
-module must keep the old wire for 2.10 servers, or the app must drop local playback on 2.10.
-Decide before the 2.11 release. This report does not check the aiosendspin 10.x package itself,
-only its release notes.
+Required change: move the `:sendspin` module to spec 1.0.0-rc1 and keep the 9.x wire for
+server 2.10. The module must select the wire before the handshake, because a 1.0.0-rc1 client
+cannot connect to aiosendspin 9.x. Select it from the server schema version: 2.10 pins
+aiosendspin 9.1.1 and 2.11 pins 10.x. This is a large change (issue #1181). This report does not
+check the aiosendspin 10.x package itself, only its release notes.
 
 ### 5.7 AI Radio
 
