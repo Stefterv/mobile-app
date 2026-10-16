@@ -6,13 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -22,14 +18,13 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialogDefaults
-import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +34,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,15 +54,18 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.music_assistant.client.settings.SendspinConnectionSettings
+import io.music_assistant.client.settings.SendspinPlayerSettings
 import io.music_assistant.client.settings.SettingsRepository
-import io.music_assistant.client.ui.compose.common.localizedTitle
-import io.music_assistant.client.ui.compose.settings.SendspinConnectionSettings
-import io.music_assistant.client.ui.compose.settings.SendspinPlayerSettings
+import io.music_assistant.client.ui.compose.common.displayName
+import io.music_assistant.client.ui.compose.common.localizedDescription
+import io.music_assistant.sendspin.api.AudioCodec
 import musicassistantclient.composeapp.generated.resources.Res
-import musicassistantclient.composeapp.generated.resources.button_cancel
-import musicassistantclient.composeapp.generated.resources.button_confirm
-import musicassistantclient.composeapp.generated.resources.cd_select_codec
+import musicassistantclient.composeapp.generated.resources.cd_collapse_sendspin_advanced
+import musicassistantclient.composeapp.generated.resources.cd_expand_sendspin_advanced
+import musicassistantclient.composeapp.generated.resources.common_cancel
 import musicassistantclient.composeapp.generated.resources.dialog_interrupting_playback
+import musicassistantclient.composeapp.generated.resources.dialog_interrupting_playback_confirm
 import musicassistantclient.composeapp.generated.resources.dialog_interrupting_playback_message
 import musicassistantclient.composeapp.generated.resources.settings_buffer_size
 import musicassistantclient.composeapp.generated.resources.settings_buffer_size_hint
@@ -75,120 +73,38 @@ import musicassistantclient.composeapp.generated.resources.settings_buffer_size_
 import musicassistantclient.composeapp.generated.resources.settings_codec_preference
 import musicassistantclient.composeapp.generated.resources.settings_custom_sendspin
 import musicassistantclient.composeapp.generated.resources.settings_host
-import musicassistantclient.composeapp.generated.resources.settings_host_placeholder
 import musicassistantclient.composeapp.generated.resources.settings_local_player
 import musicassistantclient.composeapp.generated.resources.settings_local_player_clear_name
 import musicassistantclient.composeapp.generated.resources.settings_path
-import musicassistantclient.composeapp.generated.resources.settings_path_placeholder
 import musicassistantclient.composeapp.generated.resources.settings_player_name
-import musicassistantclient.composeapp.generated.resources.settings_port_default
-import musicassistantclient.composeapp.generated.resources.settings_port_placeholder
+import musicassistantclient.composeapp.generated.resources.settings_port
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_advanced_summary
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_advanced_title
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_intro
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_reset_defaults
 import musicassistantclient.composeapp.generated.resources.settings_sendspin_save_changes
-import musicassistantclient.composeapp.generated.resources.settings_use_tls_ws
-import musicassistantclient.composeapp.generated.resources.settings_use_tls_wss_short
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-private typealias UpdateSendspinSettings = (SendspinPlayerSettings.() -> Unit) -> Unit
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SendspinSettingsManager(
-    sendspinEnabled: Boolean,
-    sendspinPlayerSettings: SendspinPlayerSettings,
-    updateSendspinPlayerSettings: UpdateSendspinSettings,
-    setSendspinEnabled: (Boolean) -> Unit,
-    resetSendspinPlayerSettings: () -> Unit,
-    commitSendspinPlayerSettings: () -> Unit,
-    isSendspinSettingsSavable: Boolean,
-    isSendspinSettingsResettable: Boolean,
-) {
-    var showInterruptionDialog by remember { mutableStateOf<(() -> Unit)?>(null) }
-
-    if (showInterruptionDialog != null) {
-        BasicAlertDialog(
-            onDismissRequest = {
-                showInterruptionDialog = null
-            },
-        ) {
-            Surface(
-                modifier = Modifier.wrapContentWidth().wrapContentHeight(),
-                shape = MaterialTheme.shapes.large,
-                tonalElevation = AlertDialogDefaults.TonalElevation,
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(Res.string.dialog_interrupting_playback),
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                    Text(
-                        text = stringResource(Res.string.dialog_interrupting_playback_message),
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(
-                        modifier = Modifier.align(Alignment.End),
-                    ) {
-                        TextButton(
-                            onClick = {
-                                showInterruptionDialog = null
-                            },
-
-                        ) {
-                            Text(stringResource(Res.string.button_cancel))
-                        }
-                        TextButton(
-                            onClick = {
-                                showInterruptionDialog?.invoke()
-                                showInterruptionDialog = null
-                            },
-                        ) {
-                            Text(stringResource(Res.string.button_confirm))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    SendspinSection(
-        enabled = sendspinEnabled,
-        settings = sendspinPlayerSettings,
-        updateSettings = updateSendspinPlayerSettings,
-        setEnabled = setSendspinEnabled,
-    ) {
-        ActionButtonsSection(
-            isResettable = isSendspinSettingsResettable,
-            onResetToDefaults = resetSendspinPlayerSettings,
-            isSavable = isSendspinSettingsSavable,
-            onSaveChanges = {
-                showInterruptionDialog = {
-                    commitSendspinPlayerSettings()
-                }
-            },
-        )
-    }
-}
-
-private fun SendspinPlayerSettings.hasNonDefaultAdvancedSettings(): Boolean =
-    bufferCapacityMb != SendspinPlayerSettings.defaults.bufferCapacityMb ||
-        connectionOverride != SendspinConnectionSettings.defaults
-
-@Composable
-fun SendspinSection(
+fun SendspinSettingsSection(
     enabled: Boolean,
     settings: SendspinPlayerSettings,
-    updateSettings: UpdateSendspinSettings,
-    setEnabled: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    trailingSection: @Composable (() -> Unit) = {  },
+    isSavable: Boolean,
+    isResettable: Boolean,
+    isConfirmationPending: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onSettingsChange: ((SendspinPlayerSettings) -> SendspinPlayerSettings) -> Unit,
+    onSave: () -> Unit,
+    onReset: () -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    var showAdvancedConfig by remember {
-        mutableStateOf(settings.hasNonDefaultAdvancedSettings())
+    if (isConfirmationPending) {
+        InterruptPlaybackDialog(onConfirm = onConfirm, onDismiss = onDismiss)
     }
+
+    var showAdvancedConfig by rememberSaveable { mutableStateOf(settings.hasNonDefaultAdvancedSettings()) }
 
     Column {
         Row(
@@ -204,11 +120,11 @@ fun SendspinSection(
             )
             Switch(
                 checked = enabled,
-                onCheckedChange = setEnabled,
+                onCheckedChange = onEnabledChange,
             )
         }
         Card(
-            modifier = modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             ),
@@ -220,49 +136,97 @@ fun SendspinSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
             )
-            DeviceNameSection(settings = settings, updateSettings = updateSettings)
-            CodecPreferenceSection(settings = settings, updateSettings = updateSettings)
+            DeviceNameSection(
+                name = settings.name,
+                onNameChange = { name -> onSettingsChange { it.copy(name = name) } },
+            )
+            CodecPreferenceSection(
+                codec = settings.codecPreference,
+                onCodecChange = { codec -> onSettingsChange { it.copy(codecPreference = codec) } },
+            )
             AdvancedConfigToggleSection(
-                showAdvancedConfig = showAdvancedConfig,
-                toggleShowAdvancedConfig = { showAdvancedConfig = !showAdvancedConfig },
+                expanded = showAdvancedConfig,
+                onToggle = { showAdvancedConfig = !showAdvancedConfig },
             )
             AnimatedVisibility(visible = showAdvancedConfig) {
-                AdvancedConfigSection(settings = settings, updateSettings = updateSettings)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    CustomConnectionSection(
+                        connection = settings.connectionOverride,
+                        onConnectionChange = { connection ->
+                            onSettingsChange { it.copy(connectionOverride = connection) }
+                        },
+                    )
+                    BufferSizeSection(
+                        bufferCapacityMb = settings.bufferCapacityMb,
+                        onBufferCapacityChange = { mb -> onSettingsChange { it.copy(bufferCapacityMb = mb) } },
+                    )
+                }
             }
-            trailingSection()
+            ActionButtonsSection(
+                isResettable = isResettable,
+                onReset = onReset,
+                isSavable = isSavable,
+                onSave = onSave,
+            )
         }
     }
 }
 
+private fun SendspinPlayerSettings.hasNonDefaultAdvancedSettings(): Boolean =
+    bufferCapacityMb != SendspinPlayerSettings.defaults.bufferCapacityMb || connectionOverride.enabled
+
+@Composable
+private fun InterruptPlaybackDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.dialog_interrupting_playback)) },
+        text = { Text(stringResource(Res.string.dialog_interrupting_playback_message)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(Res.string.dialog_interrupting_playback_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.common_cancel))
+            }
+        },
+    )
+}
+
 @Composable
 private fun DeviceNameSection(
-    settings: SendspinPlayerSettings,
-    updateSettings: UpdateSendspinSettings,
+    name: String,
+    onNameChange: (String) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
-    val defaultDeviceName = remember { SettingsRepository.DEVICE_NAME }
 
     OutlinedTextField(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        value = settings.name,
-        onValueChange = { name ->
-            updateSettings {
-                this.name = name
-            }
-        },
+        value = name,
+        onValueChange = onNameChange,
         label = { Text(stringResource(Res.string.settings_player_name)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         trailingIcon = {
-            if (settings.name != defaultDeviceName) {
-                Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = stringResource(Res.string.settings_local_player_clear_name),
-                    modifier = Modifier.clickable { updateSettings { this.name = defaultDeviceName } },
-                )
+            if (name != SettingsRepository.DEVICE_NAME) {
+                IconButton(onClick = { onNameChange(SettingsRepository.DEVICE_NAME) }) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = stringResource(Res.string.settings_local_player_clear_name),
+                    )
+                }
             }
         },
     )
@@ -270,8 +234,8 @@ private fun DeviceNameSection(
 
 @Composable
 private fun CodecPreferenceSection(
-    settings: SendspinPlayerSettings,
-    updateSettings: UpdateSendspinSettings,
+    codec: AudioCodec,
+    onCodecChange: (AudioCodec) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -286,24 +250,20 @@ private fun CodecPreferenceSection(
             modifier = Modifier.fillMaxWidth(),
         )
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            SettingsRepository.CODECS.forEachIndexed { index, codec ->
+            SettingsRepository.CODECS.forEachIndexed { index, option ->
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(
                         index = index,
                         count = SettingsRepository.CODECS.size,
                     ),
-                    onClick = { updateSettings { this.codecPreference = codec } },
-                    selected = codec == settings.codecPreference,
-                    label = { Text(codec.localizedTitle().substringBefore(" ")) },
+                    onClick = { onCodecChange(option) },
+                    selected = option == codec,
+                    label = { Text(option.displayName) },
                 )
             }
         }
         Text(
-            text = settings.codecPreference
-                .localizedTitle()
-                .substringAfter(" ")
-                .replace("(", "")
-                .replace(")", ""),
+            text = codec.localizedDescription(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -312,8 +272,8 @@ private fun CodecPreferenceSection(
 
 @Composable
 private fun AdvancedConfigToggleSection(
-    showAdvancedConfig: Boolean = false,
-    toggleShowAdvancedConfig: () -> Unit = {  },
+    expanded: Boolean,
+    onToggle: () -> Unit,
 ) {
     ListItem(
         headlineContent = { Text(stringResource(Res.string.settings_sendspin_advanced_title)) },
@@ -321,11 +281,13 @@ private fun AdvancedConfigToggleSection(
         trailingContent = {
             Icon(
                 modifier = Modifier.size(24.dp),
-                imageVector = if (showAdvancedConfig) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = stringResource(Res.string.cd_select_codec),
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = stringResource(
+                    if (expanded) Res.string.cd_collapse_sendspin_advanced else Res.string.cd_expand_sendspin_advanced,
+                ),
             )
         },
-        modifier = Modifier.clickable(onClick = toggleShowAdvancedConfig),
+        modifier = Modifier.clickable(onClick = onToggle),
         colors = ListItemDefaults.colors(
             containerColor = Color.Transparent,
         ),
@@ -334,10 +296,10 @@ private fun AdvancedConfigToggleSection(
 
 @Composable
 private fun ActionButtonsSection(
-    isResettable: Boolean = true,
-    onResetToDefaults: () -> Unit,
-    isSavable: Boolean = false,
-    onSaveChanges: () -> Unit,
+    isResettable: Boolean,
+    onReset: () -> Unit,
+    isSavable: Boolean,
+    onSave: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -347,26 +309,26 @@ private fun ActionButtonsSection(
     ) {
         OutlinedButton(
             modifier = Modifier.weight(1f),
-            onClick = onResetToDefaults,
+            onClick = onReset,
             contentPadding = PaddingValues(0.dp),
             enabled = isResettable,
         ) {
             Icon(
                 imageVector = Icons.Default.Refresh,
-                contentDescription = stringResource(Res.string.settings_sendspin_reset_defaults),
+                contentDescription = null,
                 modifier = Modifier.padding(end = 8.dp),
             )
             Text(stringResource(Res.string.settings_sendspin_reset_defaults))
         }
         FilledTonalButton(
             modifier = Modifier.weight(1f),
-            onClick = onSaveChanges,
+            onClick = onSave,
             enabled = isSavable,
             contentPadding = PaddingValues(0.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = stringResource(Res.string.settings_sendspin_save_changes),
+                contentDescription = null,
                 modifier = Modifier.padding(end = 8.dp),
             )
             Text(stringResource(Res.string.settings_sendspin_save_changes))
@@ -375,25 +337,9 @@ private fun ActionButtonsSection(
 }
 
 @Composable
-private fun AdvancedConfigSection(
-    settings: SendspinPlayerSettings,
-    updateSettings: UpdateSendspinSettings,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-    ) {
-        CustomConnectionSection(settings = settings, updateSettings = updateSettings)
-        BufferSizeSection(settings = settings, updateSettings = updateSettings)
-    }
-}
-
-@Composable
 private fun CustomConnectionSection(
-    settings: SendspinPlayerSettings,
-    updateSettings: UpdateSendspinSettings,
+    connection: SendspinConnectionSettings,
+    onConnectionChange: (SendspinConnectionSettings) -> Unit,
 ) {
     Column {
         Row(
@@ -407,65 +353,45 @@ private fun CustomConnectionSection(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Checkbox(
-                checked = settings.connectionOverride.enabled,
-                onCheckedChange = {
-                    updateSettings {
-                       connectionOverride.enabled = it
-                    }
-                },
+                checked = connection.enabled,
+                onCheckedChange = { onConnectionChange(connection.copy(enabled = it)) },
             )
         }
 
         SingleChoiceSegmentedButtonRow {
             SegmentedButton(
-                shape = SegmentedButtonDefaults.itemShape(
-                    index = 0,
-                    count = 2,
-                ),
-                onClick = {
-                    updateSettings {
-                        connectionOverride.tls = false
-                    }
-                },
-                selected = !settings.connectionOverride.tls,
-                enabled = settings.connectionOverride.enabled,
-                label = { Text(stringResource(Res.string.settings_use_tls_ws)) },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                onClick = { onConnectionChange(connection.copy(tls = false)) },
+                selected = !connection.tls,
+                enabled = connection.enabled,
+                label = { Text("ws://") },
             )
             SegmentedButton(
-                shape = SegmentedButtonDefaults.itemShape(
-                    index = 1,
-                    count = 2,
-                ),
-                onClick = {
-                    updateSettings {
-                        connectionOverride.tls = true
-                    }
-                },
-                selected = settings.connectionOverride.tls,
-                enabled = settings.connectionOverride.enabled,
-            label = { Text(stringResource(Res.string.settings_use_tls_wss_short)) },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                onClick = { onConnectionChange(connection.copy(tls = true)) },
+                selected = connection.tls,
+                enabled = connection.enabled,
+                label = { Text("wss://") },
             )
         }
-        ConnectionFieldsSection(settings = settings, updateSettings = updateSettings)
+        ConnectionFieldsSection(connection = connection, onConnectionChange = onConnectionChange)
     }
 }
 
 @Composable
 private fun ConnectionFieldsSection(
-    settings: SendspinPlayerSettings,
-    updateSettings: UpdateSendspinSettings,
+    connection: SendspinConnectionSettings,
+    onConnectionChange: (SendspinConnectionSettings) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
 
-    var isHostFocused by remember { mutableStateOf(false) }
     var isPortFocused by remember { mutableStateOf(false) }
     var isPathFocused by remember { mutableStateOf(false) }
 
     // Raw text so the field can be cleared while editing; empty means the default port.
-    val port = settings.connectionOverride.port
-    var portText by remember { mutableStateOf(port.toString()) }
-    LaunchedEffect(port) {
-        if (portText.toPortOrDefault() != port) portText = port.toString()
+    var portText by remember { mutableStateOf(connection.port.toString()) }
+    LaunchedEffect(connection.port) {
+        if (portText.toPortOrDefault() != connection.port) portText = connection.port.toString()
     }
 
     Row(
@@ -474,33 +400,18 @@ private fun ConnectionFieldsSection(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .onFocusChanged { isHostFocused = it.isFocused }
                 .weight(if (isPortFocused || isPathFocused) 1f else 2f)
                 .padding(bottom = 12.dp),
-            value = settings.connectionOverride.host,
-            onValueChange = { host -> updateSettings { connectionOverride.host = host } },
-            label = {
-                Text(
-                    text = stringResource(Res.string.settings_host),
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                )
-            },
+            value = connection.host,
+            onValueChange = { onConnectionChange(connection.copy(host = it)) },
+            label = { SingleLineText(stringResource(Res.string.settings_host)) },
             singleLine = true,
-            placeholder = {
-                Text(
-                    text = stringResource(Res.string.settings_host_placeholder),
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                )
-            },
+            placeholder = { SingleLineText("example.com") },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) },
             ),
-            enabled = settings.connectionOverride.enabled,
+            enabled = connection.enabled,
         )
         OutlinedTextField(
             modifier = Modifier
@@ -509,74 +420,58 @@ private fun ConnectionFieldsSection(
                 .padding(bottom = 12.dp),
             value = portText,
             onValueChange = { text ->
-                if (text.length <= 5 && text.all { it.isDigit() }) {
-                    portText = text
-                    updateSettings { connectionOverride.port = text.toPortOrDefault() }
+                text.takeIf { it.length <= MAX_PORT_LENGTH && it.all(Char::isDigit) }?.let {
+                    portText = it
+                    onConnectionChange(connection.copy(port = it.toPortOrDefault()))
                 }
             },
-            label = {
-                Text(
-                    text = stringResource(Res.string.settings_port_default),
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                )
-            },
+            label = { SingleLineText(stringResource(Res.string.settings_port)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next,
             ),
-            placeholder = {
-                Text(
-                    text = stringResource(Res.string.settings_port_placeholder),
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                )
-            },
+            placeholder = { SingleLineText(SettingsRepository.DEFAULT_SENDSPIN_PORT.toString()) },
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Next) },
             ),
-            enabled = settings.connectionOverride.enabled,
+            enabled = connection.enabled,
         )
         OutlinedTextField(
             modifier = Modifier
                 .onFocusChanged { isPathFocused = it.isFocused }
                 .weight(if (isPathFocused) 2f else 1f)
                 .padding(bottom = 12.dp),
-            value = settings.connectionOverride.path,
-            onValueChange = { path -> updateSettings { connectionOverride.path = path } },
-            placeholder = {
-                Text(
-                    text = stringResource(Res.string.settings_path_placeholder),
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                )
-            },
-            label = {
-                Text(
-                    text = stringResource(Res.string.settings_path),
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                )
-            },
+            value = connection.path,
+            onValueChange = { onConnectionChange(connection.copy(path = it)) },
+            placeholder = { SingleLineText(SettingsRepository.DEFAULT_SENDSPIN_PATH) },
+            label = { SingleLineText(stringResource(Res.string.settings_path)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            enabled = settings.connectionOverride.enabled,
+            enabled = connection.enabled,
         )
     }
 }
+
+@Composable
+private fun SingleLineText(text: String) {
+    Text(
+        text = text,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Clip,
+    )
+}
+
+private const val MAX_PORT_LENGTH = 5
 
 private fun String.toPortOrDefault(): Int = toIntOrNull() ?: SettingsRepository.DEFAULT_SENDSPIN_PORT
 
 @Composable
 private fun BufferSizeSection(
-    settings: SendspinPlayerSettings,
-    updateSettings: UpdateSendspinSettings,
+    bufferCapacityMb: Int,
+    onBufferCapacityChange: (Int) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(
@@ -590,17 +485,14 @@ private fun BufferSizeSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = stringResource(
-                    Res.string.settings_buffer_size_value,
-                    settings.bufferCapacityMb,
-                ),
+                text = stringResource(Res.string.settings_buffer_size_value, bufferCapacityMb),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
         Slider(
-            value = settings.bufferCapacityMb.toFloat(),
-            onValueChange = { updateSettings { bufferCapacityMb = it.roundToInt() } },
+            value = bufferCapacityMb.toFloat(),
+            onValueChange = { onBufferCapacityChange(it.roundToInt()) },
             valueRange = SettingsRepository.BUFFER_MB_MIN.toFloat()..SettingsRepository.BUFFER_MB_MAX.toFloat(),
             steps = (SettingsRepository.BUFFER_MB_MAX - SettingsRepository.BUFFER_MB_MIN) /
                 SettingsRepository.BUFFER_MB_STEP - 1,

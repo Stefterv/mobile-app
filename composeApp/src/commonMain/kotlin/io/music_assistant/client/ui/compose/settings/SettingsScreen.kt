@@ -77,7 +77,7 @@ import io.music_assistant.client.ui.compose.common.clearFocusOnScroll
 import io.music_assistant.client.ui.compose.common.toDisplayString
 import io.music_assistant.client.ui.compose.nav.BackHandler
 import io.music_assistant.client.ui.compose.nav.TopBarLayout
-import io.music_assistant.client.ui.compose.settings.sections.SendspinSettingsManager
+import io.music_assistant.client.ui.compose.settings.sections.SendspinSettingsSection
 import io.music_assistant.client.ui.theme.ThemeSetting
 import io.music_assistant.client.ui.theme.ThemeViewModel
 import io.music_assistant.client.utils.AppVersion
@@ -156,10 +156,12 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
     val connectionHistory by viewModel.connectionHistory.collectAsStateWithLifecycle()
     val dataConnection = (sessionState as? SessionState.Connected)?.dataConnectionState
     val isAuthenticated = dataConnection is DataConnectionState.Authenticated
-    val sendspinEnabled by viewModel.sendspinEnabled.collectAsStateWithLifecycle()
-    val sendspinPlayerSettings by viewModel.sendspinDraftSettings.collectAsStateWithLifecycle()
-    val isSendspinSettingsSavable by viewModel.isSendspinSettingsSavable.collectAsStateWithLifecycle()
-    val isSendspinSettingsResettable by viewModel.isSendspinSettingsResettable.collectAsStateWithLifecycle()
+    val sendspinViewModel = koinViewModel<SendspinSettingsViewModel>()
+    val sendspinEnabled by sendspinViewModel.enabled.collectAsStateWithLifecycle()
+    val sendspinDraft by sendspinViewModel.draft.collectAsStateWithLifecycle()
+    val isSendspinSavable by sendspinViewModel.isSavable.collectAsStateWithLifecycle()
+    val isSendspinResettable by sendspinViewModel.isResettable.collectAsStateWithLifecycle()
+    val isSendspinConfirmationPending by sendspinViewModel.isConfirmationPending.collectAsStateWithLifecycle()
     val hasCrashLog by viewModel.hasCrashLog.collectAsStateWithLifecycle()
     val isPreparingShare by viewModel.isPreparingShare.collectAsStateWithLifecycle()
     val localNetworkOnboardingShown by viewModel.localNetworkOnboardingShown
@@ -364,15 +366,18 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                                 // State 4: Connected and authenticated
 
                                 // Local Player Section
-                                SendspinSettingsManager(
-                                    sendspinEnabled = sendspinEnabled,
-                                    sendspinPlayerSettings = sendspinPlayerSettings,
-                                    updateSendspinPlayerSettings = { viewModel.updateSendspinDraftSettings(it) },
-                                    setSendspinEnabled = { viewModel.setSendspinEnabledWithDraftCommit(it) },
-                                    resetSendspinPlayerSettings = { viewModel.resetSendspinDraftSettings() },
-                                    commitSendspinPlayerSettings = { viewModel.commitSendspinDraftSettings() },
-                                    isSendspinSettingsSavable = isSendspinSettingsSavable,
-                                    isSendspinSettingsResettable = isSendspinSettingsResettable,
+                                SendspinSettingsSection(
+                                    enabled = sendspinEnabled,
+                                    settings = sendspinDraft,
+                                    isSavable = isSendspinSavable,
+                                    isResettable = isSendspinResettable,
+                                    isConfirmationPending = isSendspinConfirmationPending,
+                                    onEnabledChange = sendspinViewModel::setEnabled,
+                                    onSettingsChange = sendspinViewModel::update,
+                                    onSave = sendspinViewModel::save,
+                                    onReset = sendspinViewModel::reset,
+                                    onConfirm = sendspinViewModel::confirm,
+                                    onDismiss = sendspinViewModel::dismiss,
                                 )
 
                                 // Car options route to the local player — only meaningful when

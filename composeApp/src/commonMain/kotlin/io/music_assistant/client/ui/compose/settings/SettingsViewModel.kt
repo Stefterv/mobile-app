@@ -12,15 +12,10 @@ import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.utils.AppVersion
 import io.music_assistant.client.utils.LocalNetworkOnboardingResources
 import io.music_assistant.client.utils.LocalNetworkPermissionGate
-import io.music_assistant.sendspin.api.AudioCodec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
@@ -179,113 +174,6 @@ class SettingsViewModel(
     fun setAllowLandscapeOnAllDevices(enabled: Boolean) =
         settings.setAllowLandscapeOnAllDevices(enabled)
 
-    // Sendspin settings
-    val sendspinEnabled = settings.sendspinEnabled
-
-    fun setSendspinEnabled(enabled: Boolean) = settings.setSendspinEnabled(enabled)
-
-    val sendspinPlayerSettings: StateFlow<SendspinPlayerSettings> = combine(
-        combine(
-            settings.sendspinUseCustomConnection,
-            settings.sendspinUseTls,
-            settings.sendspinHost,
-            settings.sendspinPort,
-            settings.sendspinPath,
-        ) { customConnectionEnabled, useTls, host, port, path ->
-            SendspinConnectionSettings(
-                enabled = customConnectionEnabled,
-                tls = useTls,
-                host = host,
-                port = port,
-                path = path,
-            )
-        },
-        settings.sendspinDeviceName,
-        settings.sendspinBufferCapacityMb,
-        settings.sendspinCodecPreference,
-    ) { connectionOverride, name, bufferCapacityMb, codecPreference ->
-        SendspinPlayerSettings(
-            name = name,
-            bufferCapacityMb = bufferCapacityMb,
-            codecPreference = codecPreference,
-            connectionOverride = connectionOverride,
-        )
-    }
-    .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = currentSendspinPlayerSettings(),
-    )
-
-    private val _sendspinDraftSettings = MutableStateFlow(sendspinPlayerSettings.value.deepCopy())
-    val sendspinDraftSettings: StateFlow<SendspinPlayerSettings> = _sendspinDraftSettings
-
-    val isSendspinSettingsSavable: StateFlow<Boolean> = combine(
-        sendspinDraftSettings,
-        sendspinPlayerSettings,
-    ) { draft, persisted ->
-        draft != persisted
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = false,
-    )
-
-    val isSendspinSettingsResettable: StateFlow<Boolean> = combine(
-        sendspinDraftSettings,
-        sendspinPlayerSettings,
-    ) { draft, _ ->
-        draft != defaultSendspinPlayerSettings()
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = sendspinDraftSettings.value != defaultSendspinPlayerSettings(),
-    )
-
-    init {
-        viewModelScope.launch {
-            sendspinPlayerSettings.collectLatest { persistedSettings ->
-                _sendspinDraftSettings.value = persistedSettings.deepCopy()
-            }
-        }
-    }
-
-    fun setSendspinEnabledWithDraftCommit(enabled: Boolean) {
-        if (enabled) {
-            commitSendspinDraftSettings()
-        }
-        setSendspinEnabled(enabled)
-    }
-
-    fun updateSendspinDraftSettings(updateFunction: SendspinPlayerSettings.() -> Unit) {
-        _sendspinDraftSettings.value = _sendspinDraftSettings.value
-            .deepCopy()
-            .apply(updateFunction)
-
-        if (!sendspinEnabled.value) {
-            commitSendspinDraftSettings()
-        }
-    }
-
-    fun resetSendspinDraftSettings() {
-        _sendspinDraftSettings.value = defaultSendspinPlayerSettings()
-    }
-
-    fun commitSendspinDraftSettings() {
-        setSendspinPlayerSettings(_sendspinDraftSettings.value)
-    }
-
-    fun setSendspinPlayerSettings(playerSettings: SendspinPlayerSettings) {
-        settings.setSendspinDeviceName(playerSettings.name)
-        settings.setSendspinBufferCapacityMb(playerSettings.bufferCapacityMb)
-        settings.setSendspinCodecPreference(playerSettings.codecPreference)
-        settings.setSendspinUseCustomConnection(playerSettings.connectionOverride.enabled)
-        settings.setSendspinUseTls(playerSettings.connectionOverride.tls)
-        settings.setSendspinHost(playerSettings.connectionOverride.host)
-        settings.setSendspinPort(playerSettings.connectionOverride.port)
-        settings.setSendspinPath(playerSettings.connectionOverride.path)
-    }
-
     // Connection method preference
     val preferredConnectionMethod = settings.preferredConnectionMethod
 
@@ -327,51 +215,4 @@ class SettingsViewModel(
     val localNetworkOnboardingShown = settings.localNetworkOnboardingShown
 
     fun dismissLocalNetworkOnboarding() = settings.setLocalNetworkOnboardingShown()
-
-    private fun currentSendspinPlayerSettings() = SendspinPlayerSettings(
-        name = settings.sendspinDeviceName.value,
-        bufferCapacityMb = settings.sendspinBufferCapacityMb.value,
-        codecPreference = settings.sendspinCodecPreference.value,
-        connectionOverride = SendspinConnectionSettings(
-            enabled = settings.sendspinUseCustomConnection.value,
-            tls = settings.sendspinUseTls.value,
-            host = settings.sendspinHost.value,
-            port = settings.sendspinPort.value,
-            path = settings.sendspinPath.value,
-        ),
-    )
-
-    private fun defaultSendspinPlayerSettings() = SendspinPlayerSettings.defaults.deepCopy()
-}
-
-data class SendspinPlayerSettings(
-    var name: String,
-    var bufferCapacityMb: Int,
-    var codecPreference: AudioCodec,
-    var connectionOverride: SendspinConnectionSettings,
-) {
-    companion object {
-        val defaults = SendspinPlayerSettings(
-            name = SettingsRepository.DEVICE_NAME,
-            bufferCapacityMb = SettingsRepository.BUFFER_MB_DEFAULT,
-            codecPreference = SettingsRepository.DEFAULT_CODEC,
-            connectionOverride = SendspinConnectionSettings(),
-        )
-    }
-}
-
-private fun SendspinPlayerSettings.deepCopy() = copy(
-    connectionOverride = connectionOverride.copy(),
-)
-
-data class SendspinConnectionSettings(
-    var enabled: Boolean = false,
-    var tls: Boolean = false,
-    var host: String = "",
-    var port: Int = SettingsRepository.DEFAULT_SENDSPIN_PORT,
-    var path: String = SettingsRepository.DEFAULT_SENDSPIN_PATH,
-) {
-    companion object {
-        val defaults = SendspinConnectionSettings()
-    }
 }
