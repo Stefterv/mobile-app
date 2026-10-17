@@ -109,6 +109,14 @@ actual class PlatformFeature {
   favorites, library membership, playlist edits and the played state. `canConfigurePlayers`
   (`config.players.write`) gates DSP and the car DSP action. Every role has `players.control`, so
   grouping has no gate.
+- **Library sort**: get the sort choices of a library list from `LibrarySortRepository.menu(mediaType)`, on the
+  phone and in Android Auto. From server 2.11 (`sortWireFor`), the menu holds the fields of `music/sort_options`
+  and the request sends `sort_field` and `sort_direction`. An older server gets the static `SortConfig` table and
+  `order_by`. The `SortConfig` default stays the list default while the server offers its field, so podcasts
+  stay newest first. If the server does not offer it, the first server option is the default. A 2.11 server
+  rejects a field that the list does not offer, so resolve the stored choice with
+  `LibrarySortMenu.resolve` before the request. Send a sort only as a `ListSort`. The sub-item lists (album
+  tracks, playlist tracks, episodes, artist lists) keep `SortConfig` and sort on the client.
 - **In-list filter**: `List.clientFiltered(query)` (`model/client/QueryFilter.kt`) filters loaded
   items on the client. Derive the visible list as raw → filter → sort in one place.
 - **Announcements**: `AnnouncementRepository` (`data/announcement/`) runs both kinds in an app scope,
@@ -259,6 +267,9 @@ See `.claude/sendspin-integration-design.md` and `.claude/sendspin-android-servi
 ## Misc rules
 
 - Don't ever use non-null assertions in live code (!!). Always handle nulls safely.
+- If code reads the `value` of a derived `StateFlow` after it writes the source, derive it with `mapState`
+  (`utils/StateFlowView.kt`). Do not use `map { }.stateIn(scope)` for it, because that value updates on
+  another coroutine and the read can get the old value.
 - Use Kotlin-like idioms (e.g., prefer `let`, `also`, `apply` for scoping).
 - Instead of `if-else` chains, prefer `when` expressions for better readability.
 - Instead of `if-else` for nullable variable, use safe calls and the Elvis operator, or `?.let{} ?: run {}` expression.
