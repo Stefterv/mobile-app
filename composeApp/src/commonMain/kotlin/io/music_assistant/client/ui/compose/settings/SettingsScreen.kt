@@ -73,6 +73,7 @@ import io.music_assistant.client.data.model.server.User
 import io.music_assistant.client.settings.ConnectionHistoryEntry
 import io.music_assistant.client.settings.ConnectionType
 import io.music_assistant.client.ui.compose.auth.AuthenticationPanel
+import io.music_assistant.client.ui.compose.common.UnsupportedInstallCard
 import io.music_assistant.client.ui.compose.common.clearFocusOnScroll
 import io.music_assistant.client.ui.compose.common.toDisplayString
 import io.music_assistant.client.ui.compose.nav.BackHandler
@@ -1169,6 +1170,9 @@ private fun ServerInfoSection(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 modifier = Modifier.padding(bottom = 12.dp),
             )
+            if (server.unsupportedInstall) {
+                UnsupportedInstallCard(modifier = Modifier.padding(bottom = 12.dp))
+            }
         }
 
         OutlinedButton(

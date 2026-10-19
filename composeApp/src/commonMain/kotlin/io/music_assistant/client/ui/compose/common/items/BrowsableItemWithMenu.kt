@@ -24,6 +24,7 @@ import io.music_assistant.client.data.model.client.items.Podcast
 import io.music_assistant.client.data.model.client.items.RecommendationFolder
 import io.music_assistant.client.settings.ViewMode
 import io.music_assistant.client.ui.compose.common.ConfirmationDialog
+import io.music_assistant.client.ui.compose.common.LocalGrantedScopes
 import io.music_assistant.client.ui.compose.common.MenuItem
 import io.music_assistant.client.ui.compose.common.RemoveFromLibraryConfirmationDialog
 import io.music_assistant.client.ui.compose.common.providers.ProviderIconFetcher
@@ -44,6 +45,7 @@ fun AlbumWithMenu(
     playlistActions: PlaylistActions? = null,
     libraryActions: LibraryActions,
     providerIconFetcher: ProviderIconFetcher?,
+    subtitle: AlbumSubtitle = AlbumSubtitle.ARTISTS,
 ) {
     BrowsableItemWithMenu(
         modifier = when (viewMode) {
@@ -65,6 +67,7 @@ fun AlbumWithMenu(
                 onClick = onClick,
                 onLongClick = onLongClick,
                 providerIconFetcher = providerIconFetcher,
+                subtitle = subtitle,
             )
             ViewMode.GRID -> AlbumGridItem(
                 modifier = mod,
@@ -72,6 +75,7 @@ fun AlbumWithMenu(
                 onClick = onClick,
                 onLongClick = onLongClick,
                 providerIconFetcher = providerIconFetcher,
+                subtitle = subtitle,
             )
         }
     }
@@ -376,6 +380,7 @@ private fun <T : AppMediaItem> BrowsableItemWithMenu(
     val actions = resolveLongClickActions(
         item = item,
         clickContext = clickContext,
+        canEditLibrary = LocalGrantedScopes.current.canEditLibrary,
         librarySupported = item !is Genre && item !is RecommendationFolder && item !is MediaCollection,
         canAddToPlaylist = playlistActions != null && item.supportsAddToPlaylist,
         canRemoveFromPlaylist = onRemoveFromPlaylist != null,
