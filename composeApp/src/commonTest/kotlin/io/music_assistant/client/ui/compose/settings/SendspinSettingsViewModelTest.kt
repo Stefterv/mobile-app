@@ -45,14 +45,20 @@ class SendspinSettingsViewModelTest {
     }
 
     @Test
-    fun editWhilePlayerOffIsSavedAtOnce() {
+    fun editWhilePlayerOffStaysInDraftUntilSaved() {
         val viewModel = viewModel(enabled = false)
 
         viewModel.rename("Kitchen")
 
+        assertEquals(SettingsRepository.DEVICE_NAME, repository.sendspinPlayerSettings.value.name)
+        assertTrue(viewModel.isSavable.value)
+        assertTrue(viewModel.isResettable.value)
+
+        viewModel.save()
+
+        assertFalse(viewModel.isConfirmationPending.value)
         assertEquals("Kitchen", repository.sendspinPlayerSettings.value.name)
         assertFalse(viewModel.isSavable.value)
-        assertTrue(viewModel.isResettable.value)
     }
 
     @Test
@@ -134,8 +140,8 @@ class SendspinSettingsViewModelTest {
 
     @Test
     fun resetWhilePlayerOffIsSavedAtOnce() {
+        repository.setSendspinPlayerSettings(SendspinPlayerSettings(name = "Kitchen", bufferCapacityMb = 30))
         val viewModel = viewModel(enabled = false)
-        viewModel.rename("Kitchen")
 
         viewModel.reset()
 
@@ -163,14 +169,15 @@ class SendspinSettingsViewModelTest {
     }
 
     @Test
-    fun turningPlayerOffAppliesTheDraft() {
+    fun turningPlayerOffKeepsTheDraftUnsaved() {
         val viewModel = viewModel()
         viewModel.rename("Kitchen")
 
         viewModel.setEnabled(false)
 
-        assertEquals("Kitchen", repository.sendspinPlayerSettings.value.name)
-        assertFalse(viewModel.isSavable.value)
+        assertEquals("Kitchen", viewModel.draft.value.name)
+        assertEquals(SettingsRepository.DEVICE_NAME, repository.sendspinPlayerSettings.value.name)
+        assertTrue(viewModel.isSavable.value)
     }
 
     @Test
@@ -189,6 +196,7 @@ class SendspinSettingsViewModelTest {
     fun defaultsSurviveRestartAsNotResettable() {
         viewModel(enabled = false).apply {
             rename("Kitchen")
+            save()
             reset()
         }
 

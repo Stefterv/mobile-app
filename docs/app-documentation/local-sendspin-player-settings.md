@@ -18,18 +18,16 @@ The advanced configuration opens automatically if one of its settings is not at 
 
 ## Saving Changes
 
-When the player is off, the app saves each change immediately.
+The app keeps your changes until you tap **Save changes**. This rule applies when the player is on and when the player is off. The **Save changes** button is available only if your changes are different from the saved settings. A setting that you change and then change back does not count as a change. Host, port and path do not count if **Custom Sendspin connection** is off.
 
-When the player is on, the app keeps your changes until you tap **Save changes**. The **Save changes** button is available only if your changes are different from the saved settings. A setting that you change and then change back does not count as a change. Host, port and path do not count if **Custom Sendspin connection** is off.
+Tap **Reset to defaults** to change all the settings in this section back to the default values. You do not tap **Save changes** after a reset.
 
-Tap **Reset to defaults** to change all the settings in this section back to the default values. When the player is on, the app applies the defaults immediately.
-
-Save and reset restart the player. If the player plays audio, the app shows the **Interrupting Playback** dialog first:
+If the player is on, save and reset restart the player. If the player plays audio, the app shows the **Interrupting Playback** dialog first:
 
 - Tap **Continue** to apply the settings. Playback stops.
 - Tap **Cancel** to keep the current settings. Your changes stay on the screen, so you can save them later.
 
-If you turn off the player while you have changes that are not saved, the app saves them.
+The switch in the section header does not save your changes. Tap **Save changes** to save them.
 
 ![Local Player Disabled - Setup](screenshots/local-sendspin-player-settings/local-player-disabled.jpeg)
 ![Local Player Codec Preference](screenshots/local-sendspin-player-settings/local-player-codec.jpeg)

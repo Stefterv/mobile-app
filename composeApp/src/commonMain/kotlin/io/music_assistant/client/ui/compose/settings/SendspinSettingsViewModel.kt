@@ -13,9 +13,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * Local player settings with a draft. While the player is off, every edit is saved at once.
- * While it is on, edits stay in the draft until a save or a reset applies them, after a
- * confirmation if the player is playing, because applying them restarts the player.
+ * Local player settings with a draft. Edits stay in the draft until a save or a reset applies
+ * them, whether the player is on or off. Applying them restarts a running player, so a save or a
+ * reset asks for a confirmation first if the player is playing.
  */
 class SendspinSettingsViewModel(
     private val settings: SettingsRepository,
@@ -41,15 +41,10 @@ class SendspinSettingsViewModel(
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    fun setEnabled(enabled: Boolean) {
-        settings.setSendspinEnabled(enabled)
-        // A stopped player has nothing to interrupt, so the draft is applied with it.
-        if (!enabled) apply(_draft.value)
-    }
+    fun setEnabled(enabled: Boolean) = settings.setSendspinEnabled(enabled)
 
     fun update(transform: (SendspinPlayerSettings) -> SendspinPlayerSettings) {
         _draft.value = transform(_draft.value)
-        if (!enabled.value) apply(_draft.value)
     }
 
     fun save() = request(_draft.value)
