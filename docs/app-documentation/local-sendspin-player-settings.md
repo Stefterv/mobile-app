@@ -12,22 +12,13 @@ You can change these settings when the player is on or off:
 - **Codec preference** — The audio codec for the stream. See [Codec Preference](#codec-preference) below.
 - **Advanced configuration** — Tap this row to show or hide the settings that follow:
   - **Custom Sendspin connection** — Keep this setting off if your setup does not need a custom connection. See [Custom Sendspin Connection](#custom-sendspin-connection).
-  - **Buffer size** — The maximum buffer size for the current stream. The buffer helps the player continue through short network interruptions. It is not for offline playback, and it does not load the next queue items in advance.
+  - **Buffer size** — The maximum buffer size for the current stream. The buffer helps the player continue through short network interruptions. It is not for offline playback, and it does not load the next queue items in advance. A larger buffer uses more app memory.
 
 The advanced configuration opens automatically if one of its settings is not at the default value.
 
 ## Saving Changes
 
-The app keeps your changes until you tap **Save changes**. This rule applies when the player is on and when the player is off. The **Save changes** button is available only if your changes are different from the saved settings. A setting that you change and then change back does not count as a change. Host, port and path do not count if **Custom Sendspin connection** is off.
-
-Tap **Reset to defaults** to change all the settings in this section back to the default values. You do not tap **Save changes** after a reset.
-
-If the player is on, save and reset restart the player. If the player plays audio, the app shows the **Interrupting Playback** dialog first:
-
-- Tap **Continue** to apply the settings. Playback stops.
-- Tap **Cancel** to keep the current settings. Your changes stay on the screen, so you can save them later.
-
-The switch in the section header does not save your changes. Tap **Save changes** to save them.
+Tap **Save changes** to apply your changes. Tap **Reset to defaults** to apply the default values. If the player plays audio, the app asks you to confirm first, because the change stops playback.
 
 ![Local Player Disabled - Setup](screenshots/local-sendspin-player-settings/local-player-disabled.jpeg)
 ![Local Player Codec Preference](screenshots/local-sendspin-player-settings/local-player-codec.jpeg)

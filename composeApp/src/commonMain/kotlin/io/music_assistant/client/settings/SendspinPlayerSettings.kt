@@ -9,12 +9,6 @@ data class SendspinPlayerSettings(
     val codecPreference: AudioCodec = SettingsRepository.DEFAULT_CODEC,
     val connectionOverride: SendspinConnectionSettings = SendspinConnectionSettings(),
 ) {
-    /** Projection that ignores the override fields while the override is off: they have no effect then. */
-    fun effective(): SendspinPlayerSettings = when {
-        connectionOverride.enabled -> this
-        else -> copy(connectionOverride = SendspinConnectionSettings())
-    }
-
     companion object {
         val defaults = SendspinPlayerSettings()
     }

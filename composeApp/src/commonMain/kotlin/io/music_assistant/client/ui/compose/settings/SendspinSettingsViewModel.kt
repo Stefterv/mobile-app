@@ -2,6 +2,7 @@ package io.music_assistant.client.ui.compose.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.music_assistant.client.settings.SendspinConnectionSettings
 import io.music_assistant.client.settings.SendspinPlayerSettings
 import io.music_assistant.client.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,4 +73,10 @@ class SendspinSettingsViewModel(
         _draft.value = target
         settings.setSendspinPlayerSettings(target)
     }
+}
+
+/** Projection that ignores the override fields while the override is off: they have no effect then. */
+private fun SendspinPlayerSettings.effective(): SendspinPlayerSettings = when {
+    connectionOverride.enabled -> this
+    else -> copy(connectionOverride = SendspinConnectionSettings())
 }
