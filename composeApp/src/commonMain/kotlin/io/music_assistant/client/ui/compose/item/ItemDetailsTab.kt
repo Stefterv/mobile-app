@@ -42,3 +42,20 @@ fun tabsFor(item: AppMediaItem): List<ItemDetailsTab> = when (item) {
     is Track -> listOf(ItemDetailsTab.TRACK_ALBUMS, ItemDetailsTab.TRACK_VERSIONS, ItemDetailsTab.SIMILAR_TRACKS)
     else -> emptyList()
 }
+
+/**
+ * True for the item types that [ItemDetailsViewModel] loads (its `getItemById`); keep both in step.
+ * Gates a navigation to `ItemDetails` from a place that can show any media type.
+ */
+val AppMediaItem.opensItemDetails: Boolean
+    get() = mediaType in ITEM_DETAILS_TYPES
+
+private val ITEM_DETAILS_TYPES = setOf(
+    MediaType.ARTIST,
+    MediaType.ALBUM,
+    MediaType.PLAYLIST,
+    MediaType.PODCAST,
+    MediaType.AUDIOBOOK,
+    MediaType.GENRE,
+    MediaType.COLLECTION,
+)
