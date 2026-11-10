@@ -317,7 +317,7 @@ class MainDataSource(
      * The players the pager shows. An unreachable player is only listed dimmed: its stale queue
      * or "playing" state must not keep the media service, the notification or the Wi-Fi lock.
      */
-    val displayedPlayers: StateFlow<List<PlayerData>> =
+    override val displayedPlayers: StateFlow<List<PlayerData>> =
         playersData
             .mapNotNull { it as? DataState.Data<List<PlayerData>> }
             .map { it.data.filter { data -> data.player.isSelectable } }
@@ -357,7 +357,7 @@ class MainDataSource(
      * Public view of the effective selection. Consumers that pair it with a player list
      * must resolve the index against that same list, not read [selectedPlayerIndex].
      */
-    val selectedPlayerId: StateFlow<String?> = _selectedPlayerId
+    override val selectedPlayerId: StateFlow<String?> = _selectedPlayerId
 
     val selectedPlayerIndex = combine(_playersData, _selectedPlayerId) { listState, selectedId ->
         selectedId?.let { id ->
@@ -994,7 +994,7 @@ class MainDataSource(
         apiClient.sendRequest(Request.Dsp.getPresets())
             .getOrNull()?.resultAs<List<DspConfigPreset>>() ?: emptyList()
 
-    fun selectPlayer(player: Player) {
+    override fun selectPlayer(player: Player) {
         // User-driven selection (UI player picker). Writes through
         // [_userSelectedPlayerId] so the choice persists; the persistence
         // launch in [init] mirrors it into [SettingsRepository] for the next

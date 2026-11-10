@@ -42,6 +42,9 @@
   <string name="action_play_from_here">Play from here</string>
   <string name="action_play_next">Play next</string>
   <string name="action_play_now">Play now</string>
+  <string name="action_play_now_on_player">%1$s on %2$s</string>
+  <string name="action_play_on">Play on…</string>
+  <string name="play_on_title">Play on</string>
   <string name="action_play_playlist_from_here">Play playlist from here</string>
   <string name="action_play_podcast_from_here">Play from here to latest</string>
   <string name="action_play_shuffled">Play shuffled</string>

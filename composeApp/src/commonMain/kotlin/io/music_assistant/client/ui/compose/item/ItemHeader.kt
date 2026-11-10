@@ -60,6 +60,7 @@ import coil3.compose.AsyncImage
 import io.music_assistant.client.data.model.client.AppMediaItemFixtures
 import io.music_assistant.client.data.model.client.ImageType
 import io.music_assistant.client.data.model.client.ItemDescription
+import io.music_assistant.client.data.model.client.PlayerData
 import io.music_assistant.client.data.model.client.ProviderDetails
 import io.music_assistant.client.data.model.client.items.Album
 import io.music_assistant.client.data.model.client.items.AppMediaItem
@@ -127,6 +128,8 @@ fun ItemHeader(
     ),
     providerIconFetcher: ProviderIconFetcher? = null,
     onPlayClick: (PlayMode) -> Unit = {},
+    playTargets: ItemDetailsViewModel.PlayTargets = ItemDetailsViewModel.PlayTargets(),
+    onPlayOnClick: (PlayerData, PlayMode) -> Unit = { _, _ -> },
     navigateToItem: (AppMediaItem) -> Unit = {},
     genres: List<Genre> = emptyList(),
     playableSummary: PlayableSummary? = null,
@@ -158,6 +161,8 @@ fun ItemHeader(
             ItemPlayButton(
                 item,
                 onPlayClick = onPlayClick,
+                playTargets = playTargets,
+                onPlayOnClick = onPlayOnClick,
                 tint = colors.controlTint,
                 modifier = Modifier.padding(top = 8.dp),
             )

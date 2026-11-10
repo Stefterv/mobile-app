@@ -1,5 +1,6 @@
 package io.music_assistant.client.data
 
+import io.music_assistant.client.data.model.client.Player
 import io.music_assistant.client.data.model.client.PlayerData
 import io.music_assistant.client.data.model.server.GrantedScopes
 import io.music_assistant.client.data.model.server.RefreshItemAccess
@@ -17,4 +18,12 @@ class FakeItemDetailsMainDataSource : ItemDetailsMainDataSource {
         MutableStateFlow(GrantedScopes.NONE)
 
     override val selectedPlayer: PlayerData? = null
+
+    override val displayedPlayers: StateFlow<List<PlayerData>> = MutableStateFlow(emptyList())
+
+    override val selectedPlayerId = MutableStateFlow<String?>(null)
+
+    override fun selectPlayer(player: Player) {
+        selectedPlayerId.value = player.id
+    }
 }
