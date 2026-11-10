@@ -55,6 +55,7 @@ import io.music_assistant.client.data.model.client.Chapter
 import io.music_assistant.client.data.model.client.ClickContext
 import io.music_assistant.client.data.model.client.ImageType
 import io.music_assistant.client.data.model.client.MediaType
+import io.music_assistant.client.data.model.client.PlayerData
 import io.music_assistant.client.data.model.client.ProviderDetails
 import io.music_assistant.client.data.model.client.SortField
 import io.music_assistant.client.data.model.client.SortOption
@@ -163,6 +164,7 @@ fun ItemDetailsScreen(
 ) {
     val state by itemDetailsViewModel.state.collectAsStateWithLifecycle()
     val refreshAction by itemDetailsViewModel.refreshAction.collectAsStateWithLifecycle()
+    val playTargets by itemDetailsViewModel.playTargets.collectAsStateWithLifecycle()
 
     ItemDetails(
         contentPadding = contentPadding,
@@ -186,6 +188,8 @@ fun ItemDetailsScreen(
         },
         providerIconFetcher = providerViewModel.providerIconFetcher(),
         onPlayClick = itemDetailsViewModel::onPlayClick,
+        playTargets = playTargets,
+        onPlayOnClick = itemDetailsViewModel::onPlayOnClick,
         onChapterClick = itemDetailsViewModel::onChapterClick,
         onChildPlayClick = itemDetailsViewModel::onPlayClick,
         onPlayableItemsSortChanged = itemDetailsViewModel::onPlayableItemsSortChanged,
@@ -220,6 +224,8 @@ fun ItemDetails(
     onRemoveFromPlaylist: (String, Int) -> Unit = { _, _ -> },
     providerIconFetcher: ProviderIconFetcher = { _, _, _ -> },
     onPlayClick: (PlayMode) -> Unit = {},
+    playTargets: ItemDetailsViewModel.PlayTargets = ItemDetailsViewModel.PlayTargets(),
+    onPlayOnClick: (PlayerData, PlayMode) -> Unit = { _, _ -> },
     onChapterClick: (Int) -> Unit = {},
     onChildPlayClick: PlayHandler<AppMediaItem> = { _, _ -> },
     onPlayableItemsSortChanged: (SubItemContext, SortOption) -> Unit = { _, _ -> },
@@ -308,6 +314,8 @@ fun ItemDetails(
                     },
                     onNavigateToList = onNavigateToList,
                     onPlayItemClick = onPlayClick,
+                    playTargets = playTargets,
+                    onPlayOnClick = onPlayOnClick,
                     onPlayChildClick = onChildPlayClick,
                     onChapterClick = onChapterClick,
                     playlistActions = playlistActions,
@@ -357,6 +365,8 @@ private fun ItemContent(
     onNavigateClick: (AppMediaItem) -> Unit,
     onNavigateToList: (String, ItemList, ClickContext) -> Unit,
     onPlayItemClick: (PlayMode) -> Unit,
+    playTargets: ItemDetailsViewModel.PlayTargets,
+    onPlayOnClick: (PlayerData, PlayMode) -> Unit,
     onPlayChildClick: PlayHandler<AppMediaItem>,
     onChapterClick: (Int) -> Unit,
     playlistActions: PlaylistActions,
@@ -425,6 +435,8 @@ private fun ItemContent(
                     colors = colors,
                     providerIconFetcher = providerIconFetcher,
                     onPlayClick = onPlayItemClick,
+                    playTargets = playTargets,
+                    onPlayOnClick = onPlayOnClick,
                     navigateToItem = onNavigateClick,
                     genres = state.genres,
                     playableSummary = state.playableSummary,

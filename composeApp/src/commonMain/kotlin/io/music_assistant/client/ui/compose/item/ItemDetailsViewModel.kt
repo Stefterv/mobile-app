@@ -9,6 +9,7 @@ import io.music_assistant.client.auth.AuthState
 import io.music_assistant.client.data.ItemDetailsMainDataSource
 import io.music_assistant.client.data.model.client.Lyrics
 import io.music_assistant.client.data.model.client.MediaType
+import io.music_assistant.client.data.model.client.PlayerData
 import io.music_assistant.client.data.model.client.QueueOption
 import io.music_assistant.client.data.model.client.SortConfig
 import io.music_assistant.client.data.model.client.SortOption
@@ -197,6 +198,21 @@ class ItemDetailsViewModel(
         ) { item, access, providers ->
             item?.refreshItemAction(access, providers.dataOrNull)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+
+    /** The player that the play button plays on, and the players that "Play on…" offers. */
+    data class PlayTargets(
+        val selected: PlayerData? = null,
+        val players: List<PlayerData> = emptyList(),
+    )
+
+    val playTargets: StateFlow<PlayTargets> =
+        combine(mainDataSource.displayedPlayers, mainDataSource.selectedPlayerId) { players, selectedId ->
+            PlayTargets(
+                selected = players.firstOrNull { it.playerId == selectedId },
+                // The server drops a command for a player it cannot reach.
+                players = players.filter { it.player.isAvailable },
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), PlayTargets())
 
     init {
         // Listen to library changes; refresh the open item + its sub-lists.
@@ -718,6 +734,16 @@ class ItemDetailsViewModel(
     }
 
     fun onPlayClick(item: AppMediaItem, mode: PlayMode) {
+        mainDataSource.selectedPlayer?.queueOrPlayerId?.let { play(item, mode, it) }
+    }
+
+    /** Plays the item on [player] and makes it the selected player, so the app follows the playback. */
+    fun onPlayOnClick(player: PlayerData, mode: PlayMode) {
+        mainDataSource.selectPlayer(player.player)
+        (_state.value.itemState as? DataState.Data)?.data?.let { play(it, mode, player.queueOrPlayerId) }
+    }
+
+    private fun play(item: AppMediaItem, mode: PlayMode, queueId: String) {
         // The rows of an episode page belong to its podcast, so "from here" plays the podcast.
         val parent = (_state.value.itemState as? DataState.Data)?.data?.let { (it as? PodcastEpisode)?.podcast ?: it }
         val (itemToPlay, startItem) = if (mode.fromHereInParent && parent != null) {
@@ -727,23 +753,21 @@ class ItemDetailsViewModel(
         }
 
         val mediaUri = itemToPlay.mediaUri ?: return
-        mainDataSource.selectedPlayer?.queueOrPlayerId?.let { queueId ->
-            Logger.withTag("PlayDispatch").i {
-                "ItemDetailsViewModel.onPlayClick: uri=$mediaUri mode=$mode " +
-                        "startItem=${startItem?.itemId} queue=$queueId"
-            }
-            playDispatcher.play(
-                PlayRequest(
-                    queueOrPlayerId = queueId,
-                    media = listOf(mediaUri),
-                    option = mode.option,
-                    endlessMixMode = mode.endlessMix && item !is Genre,
-                    startItem = startItem?.itemId,
-                    shuffle = mode.shuffle,
-                    startFromBeginning = mode.startFromBeginning,
-                ),
-            )
+        Logger.withTag("PlayDispatch").i {
+            "ItemDetailsViewModel.play: uri=$mediaUri mode=$mode " +
+                    "startItem=${startItem?.itemId} queue=$queueId"
         }
+        playDispatcher.play(
+            PlayRequest(
+                queueOrPlayerId = queueId,
+                media = listOf(mediaUri),
+                option = mode.option,
+                endlessMixMode = mode.endlessMix && item !is Genre,
+                startItem = startItem?.itemId,
+                shuffle = mode.shuffle,
+                startFromBeginning = mode.startFromBeginning,
+            ),
+        )
     }
 
     fun onChapterClick(chapterPosition: Int) {
