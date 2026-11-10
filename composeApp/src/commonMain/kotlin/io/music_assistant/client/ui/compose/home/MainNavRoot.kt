@@ -74,21 +74,18 @@ import io.music_assistant.client.nav.createNavigationItem
 import io.music_assistant.client.ui.compose.common.ToastDuration
 import io.music_assistant.client.ui.compose.common.ToastHost
 import io.music_assistant.client.ui.compose.common.action.PlayerAction
-import io.music_assistant.client.ui.compose.common.icons.PauseIcon
-import io.music_assistant.client.ui.compose.common.icons.PlayIcon
 import io.music_assistant.client.ui.compose.common.icons.SkipForwardIcon
-import io.music_assistant.client.ui.compose.common.icons.StopIcon
 import io.music_assistant.client.ui.compose.common.providers.providerIconFetcher
 import io.music_assistant.client.ui.compose.common.rememberToastState
 import io.music_assistant.client.ui.compose.common.viewmodel.ActionsViewModel
 import io.music_assistant.client.ui.compose.home.players.DspSettingsViewModel
-import io.music_assistant.client.ui.compose.home.players.GroupCountBadge
+import io.music_assistant.client.ui.compose.home.players.PlayerSheetStart
 import io.music_assistant.client.ui.compose.home.players.PlayersPager
 import io.music_assistant.client.ui.compose.home.players.QueueDjViewModel
 import io.music_assistant.client.ui.compose.home.players.SelectPlayerSheet
 import io.music_assistant.client.ui.compose.home.players.contentDescription
-import io.music_assistant.client.ui.compose.home.players.groupBadge
 import io.music_assistant.client.ui.compose.home.players.iconRes
+import io.music_assistant.client.ui.compose.home.players.mainTransport
 import io.music_assistant.client.ui.compose.home.players.overflowLabel
 import io.music_assistant.client.ui.compose.home.players.rememberHideUnavailablePlayers
 import io.music_assistant.client.ui.compose.home.players.rememberToggleHideUnavailablePlayers
@@ -121,9 +118,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import musicassistantclient.composeapp.generated.resources.Res
-import musicassistantclient.composeapp.generated.resources.action_pause
-import musicassistantclient.composeapp.generated.resources.action_play
-import musicassistantclient.composeapp.generated.resources.action_stop
 import musicassistantclient.composeapp.generated.resources.app_name
 import musicassistantclient.composeapp.generated.resources.cd_more
 import musicassistantclient.composeapp.generated.resources.media_action_next
@@ -280,12 +274,12 @@ fun MainNavigationRoot(
     // An expanded player (for example from a deep link) always stays visible.
     val rootScreenEditing = homeScreenState.value?.editMode == true
 
-    var showPlayerSelection by remember { mutableStateOf(false) }
+    var playerSheet by remember { mutableStateOf<PlayerSheetStart?>(null) }
     playersState.let {
         if (it is HomeScreenViewModel.PlayersState.Data) {
             val selectedPlayer = it.selectedPlayer
             if (selectedPlayer != null) {
-                if (showPlayerSelection) {
+                playerSheet?.let { start ->
                     val leaderLeaveSupported by homeScreenViewModel.leaderLeaveSupported
                         .collectAsStateWithLifecycle()
                     val playerDelays by homeScreenViewModel.playerDelays.collectAsStateWithLifecycle()
@@ -293,7 +287,7 @@ fun MainNavigationRoot(
                     SelectPlayerSheet(
                         selectedPlayer = selectedPlayer,
                         players = it.playerData,
-                        onDismissRequest = { showPlayerSelection = false },
+                        onDismissRequest = { playerSheet = null },
                         onMoveToPlayer = { id: String ->
                             it.playerData.find { playerData -> playerData.player.id == id }?.player?.let { player ->
                                 homeScreenViewModel.selectPlayer(player)
@@ -301,12 +295,14 @@ fun MainNavigationRoot(
                         },
                         onReorder = homeScreenViewModel::onPlayersSortChanged,
                         onPlayerAction = homeScreenViewModel::playerAction,
+                        onTransportAction = homeScreenViewModel::playerAction,
                         hideUnavailable = rememberHideUnavailablePlayers(),
                         onToggleHideUnavailable = rememberToggleHideUnavailablePlayers(),
                         playerDelays = playerDelays,
                         onLoadPlayerDelays = homeScreenViewModel::loadPlayerDelays,
                         onAdjustPlayerDelay = homeScreenViewModel::adjustPlayerDelay,
                         canLeaveGroup = leaderLeaveSupported,
+                        start = start,
                     )
                 }
             }
@@ -347,12 +343,9 @@ fun MainNavigationRoot(
                 if (selectedPlayer != null) {
                     NavigationItem(
                         selected = false,
-                        onClick = { showPlayerSelection = true },
+                        onClick = { playerSheet = PlayerSheetStart.Players },
                         icon = vectorResource(selectedPlayer.iconRes()),
                         badgeColor = selectedPlayer.statusDotColor(state.sendspinState),
-                        iconBadge = selectedPlayer.groupBadge()?.let { count ->
-                            @Composable { GroupCountBadge(count) }
-                        },
                         label = selectedPlayer.player.name,
                         overflowLabel = selectedPlayer.overflowLabel(),
                         marqueeLabel = true,
@@ -373,33 +366,13 @@ fun MainNavigationRoot(
             // The same rules as the buttons in the player: Stop for streams that cannot pause,
             // dimmed buttons when the queue cannot play or skip, and a cancel while play is pending.
             val transport = player.transportState(chapterProgressEnabled)
-            val pending = player.pendingPlay && !player.player.isPlaying
-            val showsPause = player.player.isPlaying || pending
+            val main = player.mainTransport()
             listOf(
                 PlaybackItem(
-                    enabled = transport.playerEnabled && (transport.buttonsEnabled || transport.showStop),
-                    onClick = {
-                        homeScreenViewModel.playerAction(
-                            player,
-                            when {
-                                pending -> PlayerAction.Pause
-                                transport.showStop -> PlayerAction.Stop
-                                else -> PlayerAction.TogglePlayPause
-                            },
-                        )
-                    },
-                    icon = when {
-                        transport.showStop -> StopIcon
-                        showsPause -> PauseIcon
-                        else -> PlayIcon
-                    },
-                    label = stringResource(
-                        when {
-                            transport.showStop -> Res.string.action_stop
-                            showsPause -> Res.string.action_pause
-                            else -> Res.string.action_play
-                        },
-                    ),
+                    enabled = main.enabled,
+                    onClick = { homeScreenViewModel.playerAction(player, main.action) },
+                    icon = main.button.icon,
+                    label = stringResource(main.button.label),
                 ),
                 PlaybackItem(
                     enabled = transport.playerEnabled && transport.buttonsEnabled && transport.skipForwardEnabled,
@@ -419,9 +392,7 @@ fun MainNavigationRoot(
             showNavigation = !playerExpanded,
             menuLabel = stringResource(Res.string.nav_menu),
             moreLabel = stringResource(Res.string.cd_more),
-            onEdited = { enabled ->
-                libraryCategoriesViewModel.onEnabledChanged(enabled)
-            },
+            onEdited = libraryCategoriesViewModel::onSidebarEdited,
             content = { scaffoldContentPadding, drawerOpen ->
                 FloatingBarLayout(
                     modifier = Modifier.padding(scaffoldContentPadding),
@@ -458,7 +429,8 @@ fun MainNavigationRoot(
                                                 ),
                                             )
                                         },
-                                        onSelectPlayer = { showPlayerSelection = true },
+                                        onSelectPlayer = { playerSheet = PlayerSheetStart.Players },
+                                        onGroupPlayer = { playerSheet = PlayerSheetStart.Group(it) },
                                     )
                                 },
                             )
@@ -521,6 +493,20 @@ private fun navigationItems(
     goToLibraryCategory: (LibraryCategory) -> Unit,
     goToSettings: () -> Unit,
 ): List<Section> {
+    val categoryItems = categories.map {
+        NavigationItem(
+            selected = false,
+            onClick = { goToLibraryCategory(it.libraryCategory) },
+            icon = it.libraryCategory.icon(),
+            label = stringResource(it.libraryCategory.stringResource()),
+            id = it.libraryCategory.name,
+            editable = true,
+            enabled = it.enabled,
+        )
+    }
+    // Browse sits in Explore, like in the web frontend. It can be hidden, but it keeps its place.
+    val (browse, libraryItems) = categoryItems.partition { it.id == LibraryCategory.BROWSE.name }
+
     val explore = Section(
         title = stringResource(Res.string.nav_explore),
         items = listOf(
@@ -536,22 +522,13 @@ private fun navigationItems(
                 label = stringResource(Res.string.nav_search),
                 screenState = searchScreenState.value,
             ),
-        ),
+        ) + browse,
     )
 
     val library = Section(
         title = stringResource(Res.string.nav_library),
-        items = categories.map {
-            NavigationItem(
-                selected = false,
-                onClick = { goToLibraryCategory(it.libraryCategory) },
-                icon = it.libraryCategory.icon(),
-                label = stringResource(it.libraryCategory.stringResource()),
-                id = it.libraryCategory.name,
-                editable = true,
-                enabled = it.enabled,
-            )
-        },
+        items = libraryItems,
+        reorderable = true,
     )
 
     val system = Section(

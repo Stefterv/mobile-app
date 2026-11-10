@@ -206,6 +206,7 @@ fun PlayersPager(
     toastState: ToastState,
     navigateToItem: (AppMediaItem) -> Unit,
     onSelectPlayer: () -> Unit,
+    onGroupPlayer: (String) -> Unit,
 ) {
     LaunchedEffect(actionsViewModel, toastState) {
         actionsViewModel.toasts.collect { toastState.showToast(it) }
@@ -227,6 +228,8 @@ fun PlayersPager(
         // Sleep timers are a server-side feature from schema 35 on; below that the
         // menu entry and the badge stay hidden entirely.
         val sleepTimerSupported by homeScreenViewModel.sleepTimerSupported
+            .collectAsStateWithLifecycle()
+        val repeatLocksAutoplay by homeScreenViewModel.repeatLocksAutoplay
             .collectAsStateWithLifecycle()
         val announcementAvailability by koinInject<AnnouncementRepository>().availability
             .collectAsStateWithLifecycle()
@@ -456,6 +459,7 @@ fun PlayersPager(
                                 colors = colors,
                                 sendspinState = state.sendspinState,
                                 onSelectPlayer = onSelectPlayer,
+                                onGroup = { onGroupPlayer(player.playerId) },
                                 playerAction = playerAction1,
                                 chapterProgressEnabled = chapterProgressEnabled,
                                 livePositionFlow = livePositionFlow,
@@ -465,10 +469,12 @@ fun PlayersPager(
                                 player = player,
                                 colors = colors,
                                 onSelectPlayer = onSelectPlayer,
+                                onGroup = { onGroupPlayer(player.playerId) },
                                 onDspButton = onDspButton.takeIf {
                                     !player.player.isGroup && grantedScopes.canConfigurePlayers
                                 },
                                 onSleepTimerButton = onSleepTimerButton.takeIf { sleepTimerSupported },
+                                repeatLocksAutoplay = repeatLocksAutoplay,
                                 // Voice is never offered for the phone's own player, so it alone can't show the entry.
                                 onAnnounceButton = onAnnounceButton.takeIf {
                                     announcementAvailability.text || (announcementAvailability.voice && !player.isLocal)
@@ -589,8 +595,10 @@ private fun ExpandedPlayerPage(
     player: PlayerData,
     colors: PlayerColors,
     onSelectPlayer: () -> Unit,
+    onGroup: () -> Unit,
     onDspButton: (() -> Unit)?,
     onSleepTimerButton: (() -> Unit)?,
+    repeatLocksAutoplay: Boolean,
     onAnnounceButton: (() -> Unit)?,
     onAmbientSoundButton: (() -> Unit)?,
     playerAction: (PlayerData, PlayerAction) -> Unit,
@@ -704,8 +712,8 @@ private fun ExpandedPlayerPage(
                         player = player,
                         controlTint = colors.controlTint,
                         sendSpinState = sendspinState,
-                        groupBadge = player.groupBadge(),
                         onSelectPlayer = onSelectPlayer,
+                        onGroup = onGroup,
                     )
                 },
                 end = {
@@ -733,6 +741,7 @@ private fun ExpandedPlayerPage(
                 player = player,
                 tint = colors.controlTint,
                 onSleepTimerClick = onSleepTimerButton,
+                repeatLocksAutoplay = repeatLocksAutoplay,
                 onToggleAutoplay = { current ->
                     playerAction(player, PlayerAction.ToggleDontStopTheMusic(current = current))
                 },
@@ -1255,6 +1264,7 @@ private fun CollapsedPlayerPage(
     colors: PlayerColors,
     sendspinState: PlayerState?,
     onSelectPlayer: () -> Unit,
+    onGroup: () -> Unit,
     playerAction: (PlayerData, PlayerAction) -> Unit,
     // Server preference gate for chapter-based Next enablement and the chapter subtitle.
     chapterProgressEnabled: Boolean = true,
@@ -1272,6 +1282,8 @@ private fun CollapsedPlayerPage(
         chapterProgressEnabled = chapterProgressEnabled,
         livePositionFlow = livePositionFlow,
         transportOnBar = verticalBarArea != null,
+        // The wide row has grouping in its player chip; the vertical bar keeps Play and Next.
+        onGroup = onGroup.takeIf { verticalBarArea == null },
     )
 }
 
@@ -1291,8 +1303,10 @@ fun ExpandedPlayerPagePreview() {
                 MaterialTheme.colorScheme.onSurface,
             ),
             onSelectPlayer = {},
+            onGroup = {},
             onDspButton = null,
             onSleepTimerButton = null,
+            repeatLocksAutoplay = false,
             onAnnounceButton = null,
             onAmbientSoundButton = null,
             playerAction = { _, _ -> },
@@ -1329,8 +1343,10 @@ fun ExpandedPlayerPageMediumScreenPreview() {
                 MaterialTheme.colorScheme.onSurface,
             ),
             onSelectPlayer = {},
+            onGroup = {},
             onDspButton = null,
             onSleepTimerButton = null,
+            repeatLocksAutoplay = false,
             onAnnounceButton = null,
             onAmbientSoundButton = null,
             playerAction = { _, _ -> },
@@ -1367,8 +1383,10 @@ fun ExpandedPlayerPageExpandedScreenPreview() {
                 MaterialTheme.colorScheme.onSurface,
             ),
             onSelectPlayer = {},
+            onGroup = {},
             onDspButton = null,
             onSleepTimerButton = null,
+            repeatLocksAutoplay = false,
             onAnnounceButton = null,
             onAmbientSoundButton = null,
             playerAction = { _, _ -> },
@@ -1409,8 +1427,10 @@ fun ExpandedPlayerPageExpandedScreenPlusPreview() {
                 MaterialTheme.colorScheme.onSurface,
             ),
             onSelectPlayer = {},
+            onGroup = {},
             onDspButton = null,
             onSleepTimerButton = null,
+            repeatLocksAutoplay = false,
             onAnnounceButton = null,
             onAmbientSoundButton = null,
             playerAction = { _, _ -> },
@@ -1448,8 +1468,10 @@ fun ExpandedPlayerPagePhoneLandscapePreview() {
                 MaterialTheme.colorScheme.onSurface,
             ),
             onSelectPlayer = {},
+            onGroup = {},
             onDspButton = null,
             onSleepTimerButton = null,
+            repeatLocksAutoplay = false,
             onAnnounceButton = null,
             onAmbientSoundButton = null,
             playerAction = { _, _ -> },
@@ -1486,8 +1508,10 @@ fun ExpandedPlayerPageLargeScreenPreview() {
                 MaterialTheme.colorScheme.onSurface,
             ),
             onSelectPlayer = {},
+            onGroup = {},
             onDspButton = null,
             onSleepTimerButton = null,
+            repeatLocksAutoplay = false,
             onAnnounceButton = null,
             onAmbientSoundButton = null,
             playerAction = { _, _ -> },
