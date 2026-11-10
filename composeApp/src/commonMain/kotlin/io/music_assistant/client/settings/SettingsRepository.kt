@@ -429,6 +429,26 @@ class SettingsRepository(
         _badgeVisibility.update { visibility }
     }
 
+    private val _headphoneTransfer = MutableStateFlow(
+        HeadphoneTransfer(
+            enabled = settings.getBoolean(HEADPHONE_TRANSFER_ENABLED_KEY, false),
+            sourcePlayerId = settings.getStringOrNull(HEADPHONE_TRANSFER_SOURCE_KEY),
+            targetPlayerId = settings.getStringOrNull(HEADPHONE_TRANSFER_TARGET_KEY),
+        ),
+    )
+    val headphoneTransfer = _headphoneTransfer.asStateFlow()
+
+    fun setHeadphoneTransfer(transfer: HeadphoneTransfer) {
+        settings.putBoolean(HEADPHONE_TRANSFER_ENABLED_KEY, transfer.enabled)
+        putOrRemove(HEADPHONE_TRANSFER_SOURCE_KEY, transfer.sourcePlayerId)
+        putOrRemove(HEADPHONE_TRANSFER_TARGET_KEY, transfer.targetPlayerId)
+        _headphoneTransfer.update { transfer }
+    }
+
+    private fun putOrRemove(key: String, value: String?) {
+        value?.let { settings.putString(key, it) } ?: settings.remove(key)
+    }
+
     // Opt-in escape hatch from the compact-device portrait lock: when set, the
     // platform layer stops constraining orientation on any device.
     private val _allowLandscapeOnAllDevices = MutableStateFlow(
@@ -853,6 +873,9 @@ class SettingsRepository(
 
         private const val CAR_DSP_CONNECT_KEY = "car_dsp_action_connect"
         private const val CAR_DSP_DISCONNECT_KEY = "car_dsp_action_disconnect"
+        private const val HEADPHONE_TRANSFER_ENABLED_KEY = "headphone_transfer_enabled"
+        private const val HEADPHONE_TRANSFER_SOURCE_KEY = "headphone_transfer_source"
+        private const val HEADPHONE_TRANSFER_TARGET_KEY = "headphone_transfer_target"
 
         // Keys below live in `secrets`, not in `settings`. Add a new key here
         // when it authenticates to the user's server or identifies it.

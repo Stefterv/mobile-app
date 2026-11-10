@@ -86,6 +86,14 @@ The Settings screen adapts its UI based on connection and authentication state:
 - **Allow landscape on all devices**: moved here from Misc, same setting (`allow_landscape_all_devices`)
 - Each switch row is `toggleable` with `Role.Switch`, so the whole row toggles
 
+### HeadphoneTransferSection
+
+iOS only for now (`HeadphoneMonitor.isSupported`), shown when authenticated, under the local player
+and car sections. A switch turns the transfer on, and two dropdowns choose the From and the To player
+from `MainDataSource.playersData`. Turning it on for the first time preselects this phone as the To
+player. A stored player that the server does not list shows as "Unavailable player". The choice is
+`HeadphoneTransfer` (`headphone_transfer_enabled`, `_source`, `_target`), saved at once.
+
 ## Authentication Flow
 
 ### Builtin Authentication

@@ -233,7 +233,7 @@ private fun BadgePreview(
 
 /** A setting that is on or off: the title, an optional hint under it, and a switch at the end. */
 @Composable
-private fun SettingSwitch(
+internal fun SettingSwitch(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,

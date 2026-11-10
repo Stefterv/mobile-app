@@ -5,6 +5,7 @@ import io.ktor.client.webrtc.WebRtcClient
 import io.ktor.utils.io.ExperimentalKtorApi
 import io.music_assistant.client.api.ServiceClient
 import io.music_assistant.client.data.CarConnectionMonitor
+import io.music_assistant.client.data.HeadphoneMonitor
 import io.music_assistant.client.data.LocalPlayerAdapter
 import io.music_assistant.client.data.announcement.AudioEngineCapture
 import io.music_assistant.client.data.announcement.MicrophoneCapture
@@ -38,6 +39,7 @@ fun iosModule() = module {
     // CarPlay scene-delegate edges (via ServiceClient.onExternalConsumerActive/Inactive) are a
     // precise connect/disconnect signal on iOS — reuse them directly.
     single<CarConnectionMonitor> { IosCarConnectionMonitor(get<ServiceClient>()) }
+    single<HeadphoneMonitor> { IosHeadphoneMonitor() }
 
     // Ktor WebRTC engine — Phase A spike for migration off webrtc-kmp.
     // See plans/let-s-investigate-possible-migration-sequential-pike.md.

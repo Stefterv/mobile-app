@@ -398,6 +398,9 @@ fun SettingsScreen(goHome: () -> Unit, exitApp: () -> Unit) {
                                     if (sendspinEnabled) {
                                         CarSection()
                                     }
+
+                                    // iOS only for now; the section shows nothing elsewhere.
+                                    HeadphoneTransferSection()
                                 }
 
                                 // A tablet has room for the interface card next to the local
