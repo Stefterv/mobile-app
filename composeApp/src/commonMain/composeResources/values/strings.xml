@@ -466,6 +466,13 @@
   <string name="settings_badge_explicit">Explicit</string>
   <string name="settings_badge_preview_title">Album title</string>
   <string name="settings_badge_preview_subtitle">Artist</string>
+  <string name="settings_headphones">Headphones</string>
+  <string name="settings_headphone_transfer">Move the playback when headphones connect</string>
+  <string name="settings_headphone_transfer_hint">If the From player plays when headphones connect to this phone, the playback moves to the To player. If the app is not running, this happens when you open it.</string>
+  <string name="settings_headphone_transfer_from">From</string>
+  <string name="settings_headphone_transfer_to">To</string>
+  <string name="settings_headphone_transfer_choose">Choose a player</string>
+  <string name="settings_headphone_transfer_unavailable">Unavailable player</string>
   <string name="settings_app_documentation">App documentation →</string>
   <string name="settings_app_version_info">Version %1$s, Build %2$s</string>
   <string name="settings_buffer_seconds_value">%1$d s</string>

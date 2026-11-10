@@ -140,6 +140,15 @@ actual class PlatformFeature {
   favorites, library membership, playlist edits and the played state. `canConfigurePlayers`
   (`config.players.write`) gates DSP and the car DSP action. Every role has `players.control`, so
   grouping has no gate.
+- **Headphone transfer**: `HeadphoneTransferApplier` (`data/`) moves the playback from the chosen source
+  player to the chosen target player when headphones connect (`SettingsRepository.headphoneTransfer`),
+  only if the source plays. It sends `player_queues/transfer` with `auto_play`, after
+  `LocalPlayerAdapter.prepareQueue` for the target, so a local pause on the phone does not stop it. Then it
+  selects the target player, like a transfer from the player menu. The state
+  at launch is not an edge. `HeadphoneMonitor` gives the signal: iOS (`IosHeadphoneMonitor`) reads the
+  output ports of the current audio route (wired and every Bluetooth audio port, not CarPlay) on each route
+  change and on each return to the foreground, because a suspended app gets no route change. Android has
+  `NoHeadphoneMonitor`, and the settings hide the feature there.
 - **Refresh item**: `music/refresh_item` loads an item again from its music services. If no service has the
   item, the server searches for a substitute. The item details menu shows "Refresh item" or "Find on your
   music services" (`RefreshItemAction`). The command needs `library.manage` before server 2.11 and

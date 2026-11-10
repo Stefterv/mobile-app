@@ -8,6 +8,7 @@ import io.music_assistant.client.auth.AuthCoordinator
 import io.music_assistant.client.auth.AuthenticationManager
 import io.music_assistant.client.connection.ConnectionManager
 import io.music_assistant.client.data.CarDspApplier
+import io.music_assistant.client.data.HeadphoneTransferApplier
 import io.music_assistant.client.data.ItemDetailsMainDataSource
 import io.music_assistant.client.data.LocalPlayerAdapter
 import io.music_assistant.client.data.LocalPlayerEndpoints
@@ -67,6 +68,7 @@ import io.music_assistant.client.ui.compose.search.SearchViewModel
 import io.music_assistant.client.ui.compose.settings.CarActionsViewModel
 import io.music_assistant.client.ui.compose.settings.CarDspViewModel
 import io.music_assistant.client.ui.compose.settings.DefaultClickActionsViewModel
+import io.music_assistant.client.ui.compose.settings.HeadphoneTransferViewModel
 import io.music_assistant.client.ui.compose.settings.SendspinSettingsViewModel
 import io.music_assistant.client.ui.compose.settings.SettingsViewModel
 import io.music_assistant.client.ui.theme.ThemeViewModel
@@ -215,6 +217,9 @@ fun sharedModule(
         single(createdAtStart = true) {     // Eager - must observe car edges from launch
             CarDspApplier(get(), get(), get(), get())
         }
+        single(createdAtStart = true) {     // Eager - must observe headphone edges from launch
+            HeadphoneTransferApplier(get(), get(), get(), get(), get())
+        }
         singleOf(::DominantColorViewModel)  // Singleton - app-wide art-color cache
         singleOf(::MdiCodepoints)           // Singleton - MDI name->codepoint table (one-time load)
         viewModelOf(::ThemeViewModel)
@@ -232,6 +237,7 @@ fun sharedModule(
         factory { DefaultClickActionsViewModel(get()) }
         factory { CarActionsViewModel(get(), get()) }
         factory { CarDspViewModel(get(), get()) }
+        factory { HeadphoneTransferViewModel(get(), get(), get()) }
         factory { AiRadioViewModel(get(), get(), get()) }
         factory {
             AuthenticationViewModel(

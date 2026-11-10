@@ -3,6 +3,8 @@ package io.music_assistant.client.di
 import io.ktor.client.webrtc.AndroidWebRtc
 import io.ktor.client.webrtc.WebRtcClient
 import io.ktor.utils.io.ExperimentalKtorApi
+import io.music_assistant.client.data.HeadphoneMonitor
+import io.music_assistant.client.data.NoHeadphoneMonitor
 import io.music_assistant.client.data.announcement.AudioRecordCapture
 import io.music_assistant.client.data.announcement.MicrophoneCapture
 import io.music_assistant.client.player.PlatformContext
@@ -26,6 +28,8 @@ fun androidModule() = module {
     single<DecoderFactory> { AndroidDecoderFactory() }
     single<MicrophoneCapture> { AudioRecordCapture() }
     single<BackgroundUsageGuard> { AndroidBackgroundUsageGuard(androidContext()) }
+    // The headphone transfer is iOS only for now.
+    single<HeadphoneMonitor> { NoHeadphoneMonitor }
     single<HttpClientFactory> {
         AndroidHttpClientFactory(androidContext(), get<SettingsRepository>().clientCertificateAlias)
     }
