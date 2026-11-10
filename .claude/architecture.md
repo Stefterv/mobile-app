@@ -196,6 +196,18 @@ actual class PlatformFeature {
   type, so a stored choice does not narrow the podcast or audiobook genres. The episodes tab of a podcast has its own played filter
   (`PlayedFilter`, one setting for all podcasts). The app sends `fully_played=false` and filters the
   answer as well, because a 2.10 server ignores the argument.
+- **Artist rows**: `ArtistDetailsViewModel` gives a singer the rows Top tracks, Albums, Singles & EPs,
+  Appears on and Discography, like the web frontend. Albums and Singles & EPs list the same sources: the
+  library first, then each provider instance. `FetchArtistItemsUseCase` fetches each source once, and
+  `ArtistReleases` splits the answer on the client by `album_type`, so the split works on server 2.10.
+  An `ItemList` keeps its `releases`, and `ItemList.select` applies them to "View all" too. Appears on
+  (`music/artists/artist_appears_on`) and Discography (`music/artists/discography`) need server 2.11
+  (`supportsArtistAppearsOnAndDiscography`) and a library artist. The discography shows all release
+  types. A release that no music provider has is an `Album` with provider `musicbrainz`
+  (`isMusicBrainzRelease`). It is not playable, so the row dims it and its menu offers "Add to
+  library" only. A tap opens the item page, and `ItemDetailsViewModel` loads it with `music/item`,
+  which resolves it to the album on a music provider. An author or a narrator keeps the rows In
+  library and All audiobooks.
 - **Providers**: `ProviderRepository` (`data/repository/`) owns the `providers` list. Read
   `providers` from it. Do not send `Request.Provider.all()` from a screen. It loads the list once
   for each session and again on each `providers_updated`. It does not use the event payload,
@@ -292,7 +304,7 @@ actual class PlatformFeature {
   with MaterialKolor, and `WALLPAPER` reads the Material You scheme (`wallpaperColorScheme`, Android 12 and newer, null on
   iOS). `withPrimaryGroupOf` copies only the primary roles and the surface tint into the default scheme. The secondary,
   tertiary and neutral roles never change, so the favorite heart (`favoriteTint`, tertiary) and the surfaces keep their
-  colors. `ThemeSetting.isDark()` resolves the light or dark choice. The settings picker (`AccentColorSection`) shows one
+  colors. `ThemeSetting.isDark()` resolves the light or dark choice. The settings picker (`AccentColorSection`, in `InterfaceSection`) shows one
   swatch for each accent that `accentColorScheme` can give on the platform. CarPlay tints its browse icons with
   `accentPrimary` through `KmpHelper.carPlayAccent`, read on each connect.
 - **Sidebar sections**: the sidebar has three sections: Explore (Discover, Search, Browse), Library and System.
@@ -328,6 +340,11 @@ actual class PlatformFeature {
   heart sits at the bottom center of the circle, in the grid and in the item page header.
   The type chip of an item that plays on tap (`AppMediaItem.playsOnTap`) is filled, and the chip of an item
   that opens its page is translucent.
+  The user can hide four badges in Settings → Interface → Badges: progress (the played state), type, source
+  (the provider icon) and explicit. `BadgeVisibility` (`settings/`) holds the choice, and `App` provides it as
+  `LocalBadgeVisibility`. `MediaItems.kt` reads it in the badge composables, so a new tile or row gets it
+  for free. The favorite heart always shows. The settings card shows a sample tile that follows the
+  switches.
 - **Stacked rows**: `CategoryRow` (`ui/compose/common/items/`) shows a row of tap-to-play items as list items, two
   in each column. The other rows show one row of grid tiles. A tap-to-play item is a track, a podcast episode or a
   radio station (`playsOnTap`). An audiobook is not a tap-to-play item, because its tile opens the item page. The
